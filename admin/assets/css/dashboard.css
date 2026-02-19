@@ -1,0 +1,176 @@
+/**
+ * ============================================================================
+ * Dashboard Stylesheet
+ * ============================================================================
+ * @description: 后台首页仪表盘样式表
+ * @author:      jiang shuo
+ * @update:      2026-1-1
+ */
+
+/* ----------------------------------------------------------------------------
+ * 1. Grid Layout (网格布局)
+ * ---------------------------------------------------------------------------- */
+.grid-wrapper {
+    padding: 20px !important;
+    height: calc(100vh - 64px);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 260px 1fr 280px;
+    grid-template-rows: repeat(12, 1fr);
+    gap: 16px;
+    height: 100%;
+    width: 100%;
+}
+
+/* ----------------------------------------------------------------------------
+ * 2. Card Components (卡片组件)
+ * ---------------------------------------------------------------------------- */
+.b-card {
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 18px;
+    padding: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 20px rgba(31, 38, 135, 0.05);
+    backdrop-filter: blur(12px);
+}
+
+.b-card:not(.no-hover-bg):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(31, 38, 135, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 10;
+}
+
+.b-card.no-hover-bg:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(31, 38, 135, 0.15);
+    z-index: 10;
+}
+
+.card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-head i {
+    margin-right: 6px;
+}
+
+/* ----------------------------------------------------------------------------
+ * 3. Specific Areas (特定区域样式)
+ * ---------------------------------------------------------------------------- */
+/* 天气区域 */
+.area-weather {
+    grid-column: 1;
+    grid-row: 1 / 5;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+    color: white;
+    border: none;
+}
+.weather-loc {
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.w-temp {
+    font-size: 46px;
+    font-weight: 700;
+    line-height: 1;
+    margin: 15px 0 5px 0;
+}
+
+/* 服务器区域 */
+.area-server { grid-column: 1; grid-row: 5 / 13; }
+
+/* 图表区域 */
+.area-chart { grid-column: 2; grid-row: 1 / 8; }
+
+/* 环境区域 */
+.area-env { grid-column: 2; grid-row: 8 / 13; }
+
+/* 作者区域 */
+.area-author {
+    grid-column: 3;
+    grid-row: 1 / 5;
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%) !important;
+    color: white;
+    border: none;
+}
+
+/* 统计区域 */
+.area-stats { grid-column: 3; grid-row: 5 / 9; }
+
+/* 快捷操作区域 */
+.area-quick { grid-column: 3; grid-row: 9 / 13; }
+
+
+/* ----------------------------------------------------------------------------
+ * 4. Server Stats Styling (服务器详情样式)
+ * ---------------------------------------------------------------------------- */
+.server-layout { display: flex; flex-direction: column; height: 100%; justify-content: space-between; }
+.server-charts { display: flex; justify-content: space-around; margin-bottom: 10px; }
+.server-circle { width: 64px; height: 64px; position: relative; }
+.server-details { display: flex; flex-direction: column; gap: 10px; }
+.svr-item { background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+.svr-label { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+.svr-value { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.svr-value-sys { font-size: 13px; font-weight: 600; color: var(--text-main); max-width: 120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor: help; }
+.svr-bar-bg { height: 4px; width: 100%; background: #e2e8f0; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.svr-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+/* ----------------------------------------------------------------------------
+ * 5. Other Components (其他小组件)
+ * ---------------------------------------------------------------------------- */
+/* 统计 Grid */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; height: 100%; }
+.stat-cell { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding-left: 16px; position: relative; overflow: hidden; }
+.stat-icon { position: absolute; right: 10px; bottom: 10px; font-size: 24px; color: rgba(0,0,0,0.05); transform: rotate(-10deg); }
+.stat-n { font-size: 20px; font-weight: 700; color: var(--text-main); z-index: 1; }
+.stat-l { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; display: flex; align-items: center; gap: 4px; z-index: 1; }
+
+/* 作者 Box */
+.auth-box { text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; z-index: 2; }
+.auth-img { width: 72px; height: 72px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.4); margin-bottom: 12px; object-fit: cover; background: #fff; }
+
+/* 环境 Grid */
+.env-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; height: 100%; }
+.env-item { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; justify-content: center; transition: 0.2s; }
+.env-item:hover { background: #fff; border-color: var(--primary); transform: scale(1.02); }
+.env-icon { font-size: 20px; margin-bottom: 6px; }
+.env-name { font-size: 11px; color: var(--text-tertiary); }
+.env-ver  { font-size: 13px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 快捷操作 Grid */
+.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; height: 100%; }
+.q-btn { background: #f1f5f9; border-radius: 10px; color: var(--text-secondary); text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; transition: 0.2s; }
+.q-btn:hover { background: var(--primary); color: white; }
+
+/* ----------------------------------------------------------------------------
+ * 6. Responsive Design (响应式适配)
+ * ---------------------------------------------------------------------------- */
+@media (max-width: 1200px) {
+    .grid-wrapper { height: auto; overflow: auto; padding-bottom: 40px !important; }
+    .dashboard-grid { display: flex; flex-direction: column; height: auto; }
+    .b-card { min-height: 200px; }
+    .area-weather, .area-author { min-height: 180px; }
+    .area-server { min-height: 340px; }
+}
