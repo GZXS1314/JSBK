@@ -41,23 +41,16 @@
 
 ## 🚀 安装指南 (Installation)
 
-### 方法一：自动安装（推荐）
+### 方法：自动安装（推荐）
 1. 将所有文件上传至网站根目录。
 2. 确保 `install/` 目录具有写入权限。
 3. 访问 `http://你的域名/install/`。
 4. 按照页面提示填写数据库信息并完成安装。
+5. 设置网站伪静态
+location / {
+    try_files $uri $uri/ /index.php?$query_string;
+}
 
-### 方法二：手动安装
-1. 创建数据库，并导入根目录下的 `bkcs.sql` 或 `install/install.sql` 文件。
-2. 修改配置文件 `includes/config.php`，填入数据库信息：
-    ```php
-    // 示例配置
-    define('DB_HOST', 'localhost');
-    define('DB_USER', 'root');
-    define('DB_PASS', 'password');
-    define('DB_NAME', 'bkcs_db');
-    ```
-3. 确保 `assets/uploads/` 目录具有写入权限 (755 或 777)。
 
 ## ⚙️ 配置说明 (Configuration)
 
