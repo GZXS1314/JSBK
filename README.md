@@ -20,7 +20,7 @@
 ## 📸 界面概览 (Screenshots)
 
 ### 后台仪表盘
-![Admin Dashboard](https://github.com/user-attachments/assets/b8226002-c781-4356-ab25-e24c5e3f173c)
+![Admin Dashboard](https://img.cdn1.vip/i/6996fd3750c44_1771502903.webp)
 *(极简主义设计，集成资源监控与数据可视化)*
 
 ---
