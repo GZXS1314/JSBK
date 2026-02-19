@@ -47,6 +47,7 @@
 3. 访问 `http://你的域名/install/`。
 4. 按照页面提示填写数据库信息并完成安装。
 5. 设置网站伪静态
+```text
 location / {
     try_files $uri $uri/ /index.php?$query_string;
 }
