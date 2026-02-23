@@ -1,18 +1,18 @@
 <?php
 // admin/index.php
 /**
-                _ _                     ____  _                             
-               | (_) __ _ _ __   __ _  / ___|| |__  _   _  ___              
-            _  | | |/ _` | '_ \ / _` | \___ \| '_ \| | | |/ _ \             
-           | |_| | | (_| | | | | (_| |  ___) | | | | |_| | (_) |            
-            \___/|_|\__,_|_| |_|\__, | |____/|_| |_|\__,_|\___/             
-   ____   _____          _  __  |___/   _____   _   _  _          ____ ____ 
+                 _ _                                        ____  _                             
+                | (_) __ _ _ __   __ _   / ___|| |__  _   _  ___              
+             _  | | |/ _` | '_ \ / _` | \___ \| '_ \| | | |/ _ \             
+            | |_| | | (_| | | | | (_| |  ___) | | | | |_| | (_) |            
+             \___/|_|\__,_|_| |_|\__, | |____/|_| |_|\__,_|\___/             
+   ____  _____          _  __  |___/  _____   _  _  _          ____ ____ 
   / ___| |__  /         | | \ \/ / / | |___ /  / | | || |        / ___/ ___|
- | |  _    / /       _  | |  \  /  | |   |_ \  | | | || |_      | |  | |    
+ | |  _    / /       _  | |  \  /  | |   |_ \  | | | || |_      | |  | |   
  | |_| |  / /_   _  | |_| |  /  \  | |  ___) | | | |__   _|  _  | |__| |___ 
   \____| /____| (_)  \___/  /_/\_\ |_| |____/  |_|    |_|   (_)  \____\____|
                                                                             
-                               追求极致的美学                               
+                                追求极致的美学                               
 **/
 require_once '../includes/config.php';
 requireLogin();
@@ -36,8 +36,6 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
  * =================================================================
  */
 function getServerStats() {
-    // ... (此处保持原有函数代码不变，篇幅原因省略，请保留原有的 getServerStats 函数) ...
-    // 为了完整性，请确保这里包含原有的 getServerStats 代码
     $stats = [
         'os_name' => php_uname('s'),
         'os_release' => php_uname('r'),
@@ -133,7 +131,6 @@ function getServerStats() {
 }
 
 function getSoftVersions($pdo) {
-    // ... (保留原有 getSoftVersions 代码) ...
     $ver = ['php' => PHP_VERSION, 'mysql' => 'Unknown', 'redis' => '未安装'];
     try {
         $v = $pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
@@ -177,14 +174,11 @@ for ($i = 6; $i >= 0; $i--) {
 require 'header.php';
 ?>
 
-<!-- 引入 ECharts 库 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
-<!-- 引入自定义 CSS -->
 <link rel="stylesheet" href="assets/css/dashboard.css">
 
 <div class="dashboard-grid">
 
-    <!-- 1. 天气 -->
     <div class="b-card area-weather no-hover-bg">
         <div class="card-head" style="color: rgba(255,255,255,0.8); margin-bottom: 0;">
             <span id="w-date"><?= date('m/d D') ?></span>
@@ -203,30 +197,126 @@ require 'header.php';
         </div>
     </div>
 
-    <!-- 2. 服务器 -->
     <div class="b-card area-server">
         <div class="card-head"><i class="fas fa-server"></i> 资源监控</div>
-        <div class="server-layout">
+        <div class="server-layout" style="display: flex; flex-direction: column; height: 100%;">
             <div class="server-charts">
-                <!-- CPU Chart -->
                 <div style="text-align:center;">
                     <div class="server-circle" id="chart-cpu"></div>
                     <div style="font-size:11px; margin-top:5px; color:var(--text-secondary);">
                         Load: <?= $server['cpu_load'] ?>
                     </div>
                 </div>
-                <!-- RAM Chart -->
                 <div style="text-align:center;">
                     <div class="server-circle" id="chart-mem"></div>
                     <div style="font-size:11px; margin-top:5px; color:var(--text-secondary);">RAM</div>
                 </div>
-                <!-- DISK Chart -->
                 <div style="text-align:center;">
                     <div class="server-circle" id="chart-disk"></div>
                     <div style="font-size:11px; margin-top:5px; color:var(--text-secondary);">DISK</div>
                 </div>
             </div>
 
+            <style>
+                .waifu-container {
+                    flex: 1;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    overflow: hidden;
+                    margin: 10px 0;
+                    min-height: 320px; 
+                    position: relative;
+                }
+                
+                /* 对话气泡样式 */
+                .waifu-dialog {
+                    position: absolute;
+                    top: 20px; 
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(255, 255, 255, 0.85);
+                    backdrop-filter: blur(4px); 
+                    padding: 6px 14px;
+                    border-radius: 12px;
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: #4b5563;
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+                    z-index: 10;
+                    white-space: nowrap;
+                    pointer-events: none; 
+                    animation: floatBubble 3s ease-in-out infinite; 
+                    opacity: 0; 
+                    transition: opacity 0.5s ease;
+                }
+                
+                /* 气泡底部的小尾巴 */
+                .waifu-dialog::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -5px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    border-width: 5px 6px 0;
+                    border-style: solid;
+                    border-color: rgba(255, 255, 255, 0.85) transparent transparent transparent;
+                }
+
+                @keyframes floatBubble {
+                    0%, 100% { transform: translate(-50%, 0); }
+                    50% { transform: translate(-50%, -3px); }
+                }
+
+                #live2d-canvas {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain; 
+                    pointer-events: auto; 
+                }
+            </style>
+            
+            <div class="waifu-container">
+                <div class="waifu-dialog" id="waifu-dialog">你好呀！</div>
+                
+                <canvas id="live2d-canvas" width="300" height="600"></canvas>
+            </div>
+            
+            <script src="https://fastly.jsdelivr.net/gh/stevenjoezhang/live2d-widget@latest/live2d.min.js"></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // 全身比例更好的模型 Koharu
+                    const modelUrl = "https://fastly.jsdelivr.net/npm/live2d-widget-model-koharu@1.0.5/assets/koharu.model.json";
+                    
+                    try {
+                        loadlive2d("live2d-canvas", modelUrl);
+                        
+                        // 气泡交互逻辑
+                        const dialog = document.getElementById('waifu-dialog');
+                        
+                        // 根据时间获取问候语
+                        function getGreeting() {
+                            const hour = new Date().getHours();
+                            if (hour >= 23 || hour <= 4) return "夜深啦，还没睡吗？注意休息哦~";
+                            if (hour >= 5 && hour <= 8) return "早上好！新的一天也要元气满满~";
+                            if (hour >= 9 && hour <= 11) return "上午好！代码敲得还顺利吗？";
+                            if (hour >= 12 && hour <= 14) return "中午好！记得按时吃午饭呀~";
+                            if (hour >= 15 && hour <= 17) return "下午好！喝杯水休息一下眼睛吧~";
+                            if (hour >= 18 && hour <= 22) return "晚上好！今天辛苦啦！";
+                            return "你好呀！";
+                        }
+
+                        // 延迟 1 秒后显示文案（等待模型加载）
+                        setTimeout(() => {
+                            dialog.innerText = getGreeting();
+                            dialog.style.opacity = '1';
+                        }, 1000);
+
+                    } catch (e) {
+                        console.error("Live2D 加载失败:", e);
+                    }
+                });
+            </script>
             <div class="server-details">
                 <div class="svr-item">
                     <div>
@@ -258,7 +348,6 @@ require 'header.php';
         </div>
     </div>
 
-    <!-- 3. 趋势图 -->
     <div class="b-card area-chart">
         <div class="card-head">
             <span><i class="fas fa-chart-line"></i> 数据发布趋势</span>
@@ -267,7 +356,6 @@ require 'header.php';
         <div id="main-chart" style="flex: 1; width: 100%;"></div>
     </div>
 
-    <!-- 4. 环境 -->
     <div class="b-card area-env">
         <div class="card-head"><i class="fas fa-microchip"></i> 核心组件</div>
         <div class="env-grid">
@@ -294,7 +382,6 @@ require 'header.php';
         </div>
     </div>
 
-    <!-- 5. 作者 -->
     <div class="b-card area-author no-hover-bg">
         <div class="auth-box">
             <img src="<?= htmlspecialchars($settings['author_avatar'] ?: '../assets/default_avatar.png') ?>" class="auth-img" alt="Avatar">
@@ -311,7 +398,6 @@ require 'header.php';
         </div>
     </div>
 
-    <!-- 6. 统计 -->
     <div class="b-card area-stats">
         <div class="card-head"><i class="fas fa-poll"></i> 站点统计</div>
         <div class="stat-grid">
@@ -338,7 +424,6 @@ require 'header.php';
         </div>
     </div>
 
-    <!-- 7. 快捷 -->
     <div class="b-card area-quick">
         <div class="card-head"><i class="fas fa-rocket"></i> 快捷操作</div>
         <div class="quick-grid">
@@ -351,7 +436,6 @@ require 'header.php';
 
 </div>
 
-<!-- 关键：将 PHP 数据注入为全局 JS 变量 -->
 <script>
     window.dbConfig = {
         chart: {
@@ -366,7 +450,6 @@ require 'header.php';
     };
 </script>
 
-<!-- 引入业务逻辑 JS -->
 <script src="assets/js/dashboard.js"></script>
 
 <?php require 'footer.php'; ?>
