@@ -175,4 +175,4 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </div>
 </div>
 <!-- 引入头部交互逻辑 JS -->
-<script src="assets/js/header.js"></script>
+<script src="assets/js/header.js?v=<?= time() ?>"></script>
