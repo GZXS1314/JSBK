@@ -78,8 +78,6 @@ Aether Design / Glassmorphism Framework / https://blog.anheyu.com/(安和鱼)
 ### 3. Nginx 伪静态配置
 ```nginx
 location / {
-    if (!-e $request_filename) {
-        rewrite  ^(.*)$  /index.php?s=$1  last;   break;
-    }
+    try_files $uri $uri/ /index.php?$query_string;
 }
 
