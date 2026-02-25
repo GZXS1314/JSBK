@@ -230,11 +230,12 @@ $btn3_link = conf('home_btn3_link', 'javascript:void(0)');
 
         <?php if($enable_chatroom): ?>
         <div class="glass-card chatroom-card">
-            <div class="chat-header"><i class="fa-regular fa-comments"></i> 在线摸鱼室</div>
+            <div class="chat-header"><i class="fa-regular fa-comments"></i> BUG反馈/功能建议</div>
             <div class="chat-messages" id="chatMessages"><div style="text-align:center; color:#999; font-size:12px; margin-top:50px;">加载消息中...</div></div>
             <div class="chat-input-area">
                 <div class="emoji-picker" id="pcEmojiPicker"></div>
-                <button class="emoji-btn" onclick="togglePcEmoji()"><i class="fa-regular fa-face-smile"></i></button>
+                <!-- 关键修改：添加 onclick="togglePcEmoji(event)" -->
+                <button class="emoji-btn" onclick="togglePcEmoji(event)"><i class="fa-regular fa-face-smile"></i></button>
                 <input type="text" class="chat-input" id="chatInput" placeholder="<?= $is_user_login ? '说点什么...' : '请先登录' ?>" <?= $is_user_login ? '' : 'disabled' ?>>
                 <button class="chat-send" onclick="sendChat()"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
