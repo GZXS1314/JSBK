@@ -17,7 +17,7 @@ if ($action === 'check') {
     $ch = curl_init(UPDATE_API_URL);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     $response = curl_exec($ch);
     curl_close($ch);
 
@@ -57,31 +57,53 @@ if ($action === 'check') {
 
     $tempZipFile = sys_get_temp_dir() . '/update_' . time() . '.zip';
     
-    // 2.1 下载更新包
-    $zipData = @file_get_contents($downloadUrl);
-    if ($zipData === false) {
-        echo json_encode(['status' => 'error', 'message' => '下载更新包失败']);
+    // 2.1 增强版下载更新包 (优先使用 cURL)
+    $zipData = false;
+    if (function_exists('curl_init')) {
+        $ch = curl_init($downloadUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60); // 允许下载 60 秒
+        $zipData = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($httpCode !== 200) $zipData = false;
+    } else {
+        // Fallback
+        $context = stream_context_create(['http' => ['timeout' => 60]]);
+        $zipData = @file_get_contents($downloadUrl, false, $context);
+    }
+
+    if ($zipData === false || empty($zipData)) {
+        echo json_encode(['status' => 'error', 'message' => '下载更新包失败，请检查服务器网络']);
         exit;
     }
     file_put_contents($tempZipFile, $zipData);
 
-    // 2.2 解压并覆盖文件 (根目录为 ../)
-    $targetDir = realpath(__DIR__ . '/../'); 
+    // 2.2 解压并覆盖文件 (更安全地获取根目录)
+    $targetDir = dirname(__DIR__); 
     
     $zip = new ZipArchive;
     if ($zip->open($tempZipFile) === TRUE) {
-        // 解压到根目录
-        $zip->extractTo($targetDir);
+        
+        // 核心修复：检查是否解压成功（防止无权限静默失败）
+        if (!$zip->extractTo($targetDir)) {
+            $zip->close();
+            @unlink($tempZipFile);
+            echo json_encode(['status' => 'error', 'message' => '解压失败，请检查网站根目录是否具有读写权限 (755/www)']);
+            exit;
+        }
         $zip->close();
         @unlink($tempZipFile); 
+
         $sqlFile = $targetDir . '/update.sql';
         if (file_exists($sqlFile)) {
             try {
-                $pdo = getDB(); // 调用 config.php 中的 PDO 实例获取函数
+                $pdo = getDB(); 
                 $sqlContent = file_get_contents($sqlFile);
                 
                 if (!empty(trim($sqlContent))) {
-                    // 执行 SQL 脚本
                     $pdo->exec($sqlContent); 
                 }
                 @unlink($sqlFile); 
@@ -94,7 +116,7 @@ if ($action === 'check') {
         }
     } else {
         @unlink($tempZipFile);
-        echo json_encode(['status' => 'error', 'message' => '解压更新包失败']);
+        echo json_encode(['status' => 'error', 'message' => '无法打开更新包，可能包已损坏']);
         exit;
     }
 
@@ -104,7 +126,7 @@ if ($action === 'check') {
         $configContent = preg_replace("/define\('APP_VERSION',\s*'.*?'\);/", "define('APP_VERSION', '{$newVersion}');", $configContent);
         file_put_contents($configFile, $configContent);
     } else {
-        echo json_encode(['status' => 'error', 'message' => '文件与数据库更新成功，但 includes/config.php 权限不足无法修改版本号，请手动修改']);
+        echo json_encode(['status' => 'error', 'message' => '文件更新成功，但 config.php 权限不足无法修改版本号']);
         exit;
     }
 
