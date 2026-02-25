@@ -34,6 +34,64 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '<div style="width:100%; padding:20px; text-align:center; color:#999; grid-column:1/-1;">加载失败，请刷新重试</div>';
         });
     }
+        // ==========================================
+    //       2. 聊天室逻辑 (优化版)
+    // ==========================================
+    if (enableChatroom) {
+        const chatContainer = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const emojiPicker = document.getElementById('pcEmojiPicker'); // 获取表情面板元素
+        const emojiBtn = document.querySelector('.emoji-btn');       // 获取按钮元素
+        
+        // --- [修复] 表情列表数据 ---
+        const emojis = ['😀','😁','😂','🤣','😃','😄','😅','😆','😉','😊','😋','😎','😍','😘','🥰','aaa','😗','😙','😚','🙂','🤗','🤩','🤔','🤨','😐','😑','😶','🙄','😏','😣','😥','😮','Vk','😯','😪','😫','dt','😴','😌','😛','😜','😝','🤤','😒','😓','😔','😕','🙃','🤑','😲','☹️','🙁','😖','😞','😟','😤','😢','😭','😦','😧','😨','😩','🤯','😬','😰','😱','🥵','🥶','😳','🤪','😵','😡','😠','🤬','😷','🤒','🤕','🤢','🤮','🤧','😇','🤠','🤡','🥳','🥴','🥺','🤥','🤫','🤭','🧐','🤓','😈','👿','👹','👺','💀','👻','👽','🤖','💩'];
+
+        // --- [修复] 渲染表情面板 ---
+        if (emojiPicker) {
+            emojiPicker.innerHTML = emojis.map(e => `<span class="emoji-item" style="cursor:pointer; padding:4px; font-size:18px;">${e}</span>`).join('');
+            
+            // 表情点击事件：插入到输入框
+            emojiPicker.addEventListener('click', (e) => {
+                if(e.target.classList.contains('emoji-item')) {
+                    const emoji = e.target.innerText;
+                    chatInput.value += emoji;
+                    emojiPicker.classList.remove('active'); // 选完后自动关闭
+                    chatInput.focus();
+                }
+            });
+        }
+
+        // --- [修复] 切换表情面板显示/隐藏函数 ---
+        window.togglePcEmoji = (e) => {
+            // 阻止冒泡，防止触发 document 的关闭事件
+            if(e) e.stopPropagation(); 
+            if(emojiPicker) {
+                emojiPicker.classList.toggle('active');
+            }
+        };
+
+        // --- [修复] 点击页面其他地方关闭表情面板 ---
+        document.addEventListener('click', (e) => {
+            if (emojiPicker && emojiPicker.classList.contains('active')) {
+                // 如果点击的不是表情面板内部，也不是表情按钮，则关闭
+                if (!emojiPicker.contains(e.target) && !emojiBtn.contains(e.target)) {
+                    emojiPicker.classList.remove('active');
+                }
+            }
+        });
+
+        // ... (保留原有的 loadChatMessages 和 sendChat 逻辑) ...
+        let pollingInterval = null;
+        let lastMsgCount = 0;
+
+        const loadChatMessages = () => {
+            // ... (保持原有代码不变)
+            fetch('api/chatroom.php?action=get_messages')
+            // ... (保持原有代码不变)
+            // ...
+        };
+        
+        // ... (保持原有代码不变)
 
     function renderHTML(list) {
         if (list.length === 0 && state.page === 1) {
