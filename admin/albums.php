@@ -226,8 +226,6 @@ require 'header.php';
                             <td class="col-id"><?= $a['id'] ?></td>
                             <td>
                                 <div style="display:flex; align-items:center; gap:12px;">
-                                    <!-- [优化] 1. loading="lazy" 开启懒加载 -->
-                                    <!-- [优化] 2. onerror 改为本地图片，防止请求国外服务器超时 -->
                                     <img src="<?= htmlspecialchars($a['cover_image']) ?>" 
                                          loading="lazy"
                                          class="cover-img" 
@@ -257,7 +255,7 @@ require 'header.php';
                 </table>
             </div>
 
-            <!-- [新增] 分页导航栏 -->
+            <!--分页导航栏 -->
             <?php if ($totalPages > 1): ?>
             <div class="pagination">
                 <span class="page-info">共 <?= $totalRows ?> 条，<?= $page ?>/<?= $totalPages ?> 页</span>

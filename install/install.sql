@@ -2,7 +2,7 @@
 -- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
--- 生成日期： 2026-02-18
+-- 生成日期： 2026-02-25
 -- 服务器版本： 5.7.44-log
 -- PHP 版本： 8.2.28
 
@@ -33,11 +33,6 @@ CREATE TABLE `admin` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
---
--- 转存表中的数据 `admin`
--- (安装程序 index.php 会自动插入用户设置的账号密码，这里留空或插入占位符皆可)
---
-
 -- --------------------------------------------------------
 
 --
@@ -58,6 +53,7 @@ CREATE TABLE `albums` (
 
 --
 -- 表的结构 `articles`
+-- 核心修复：增加了 media_type 和 media_data 字段
 --
 
 DROP TABLE IF EXISTS `articles`;
@@ -74,6 +70,8 @@ CREATE TABLE `articles` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT NULL,
   `is_recommended` tinyint(1) DEFAULT '0' COMMENT '1:推荐 0:普通',
+  `media_type` varchar(20) DEFAULT 'images' COMMENT 'images 或 video',
+  `media_data` text COMMENT '多图URL数组 或 视频数据JSON',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -240,12 +238,12 @@ CREATE TABLE `settings` (
 INSERT INTO `settings` (`key_name`, `value`) VALUES
 ('ai_api_key', ''),
 ('ai_api_url', 'https://api.bltcy.ai/v1/chat/completions'),
-('ai_model_name', 'gemini-3-pro-preview'),
+('ai_model_name', 'gpt-4o-mini'),
 ('author_avatar', ''),
 ('author_bio', ''),
 ('author_name', 'My Blog'),
 ('baidu_verify', ''),
-('chatroom_muted', ''),
+('chatroom_muted', '0'),
 ('cos_bucket', ''),
 ('cos_domain', ''),
 ('cos_enabled', '0'),

@@ -2,18 +2,14 @@
  * ============================================================================
  * Articles Manager Logic
  * ============================================================================
- * @description: 文章管理交互逻辑 (编辑器、AI、批量操作)
- * @author:      jiang shuo
- * @update:      2026-1-1
+ * @description: 文章管理交互逻辑 (编辑器、AI、批量操作、多媒体上传、笔记卡片)
  */
 
 let editor = null;
 const modal = document.getElementById('postModal');
 const form = document.getElementById('postForm');
 
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化事件
-});
+document.addEventListener('DOMContentLoaded', function() {});
 
 /**
  * ----------------------------------------------------------------------------
@@ -36,13 +32,11 @@ async function startAiGenerate() {
 
     const btn = document.getElementById('btnStartAi');
     const originalText = btn.innerHTML;
-    
     const titleInput = document.getElementById('artTitle');
     const summaryInput = document.getElementById('artSummary');
     
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 正在连接大脑...';
-    
     titleInput.value = '';
     summaryInput.value = '';
 
@@ -57,11 +51,10 @@ async function startAiGenerate() {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        
         closeAiModal();
 
         const SEPARATOR = "===PART_SPLIT_MARKER==="; 
-        let currentStage = 0; // 0=Title, 1=Summary, 2=Content
+        let currentStage = 0; 
         let tempBuffer = ""; 
         let textQueue = []; 
         let fullHtml = "";    
@@ -88,7 +81,6 @@ async function startAiGenerate() {
             if (!value) continue;
 
             const chunk = decoder.decode(value, { stream: true });
-            
             if (chunk.includes('[ERROR]')) {
                 alert('生成出错: ' + chunk.replace('[ERROR]', ''));
                 clearInterval(renderTimer);
@@ -162,32 +154,70 @@ async function startAiGenerate() {
 
 /**
  * ----------------------------------------------------------------------------
- * 2. 封面预览功能
+ * 2. 多媒体 (图文/视频) 切换与增加逻辑
  * ----------------------------------------------------------------------------
  */
-function previewCover(input) {
-    const box = document.getElementById('cover-preview-box');
-    const img = document.getElementById('cover-preview-img');
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            img.src = e.target.result;
-            box.style.display = 'block';
-        }
-        reader.readAsDataURL(input.files[0]);
+function toggleMediaMode() {
+    const mode = document.getElementById('artMediaType').value;
+    if(mode === 'video') {
+        document.getElementById('mode-images').style.display = 'none';
+        document.getElementById('mode-video').style.display = 'block';
+    } else {
+        document.getElementById('mode-images').style.display = 'block';
+        document.getElementById('mode-video').style.display = 'none';
     }
 }
 
-function previewUrl(url) {
-    const box = document.getElementById('cover-preview-box');
-    const img = document.getElementById('cover-preview-img');
-    if(url && url.length > 5) {
-        img.src = url;
-        box.style.display = 'block';
-    } else {
-        if(document.getElementById('coverFile').files.length === 0) {
-            box.style.display = 'none';
+function addImageInput(url = '') {
+    const container = document.getElementById('image-list-container');
+    const index = container.children.length;
+    
+    const uid = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    const fileInputId = 'img_file_' + uid;
+    const thumbId = 'img_thumb_' + uid;
+    
+    const defaultSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23f1f5f9'/><text x='50%' y='50%' font-family='sans-serif' font-size='12' fill='%2394a3b8' text-anchor='middle' dominant-baseline='middle'>暂无图片</text></svg>";
+    const imgSrc = url ? url : defaultSvg;
+    
+    const div = document.createElement('div');
+    div.className = 'image-list-item';
+    
+    div.innerHTML = `
+        <div class="image-item-header">
+            <span class="image-item-title">图片 ${index + 1} ${index === 0 ? '<span style="color:#ec4899;font-size:12px;margin-left:4px;">(封面图)</span>' : ''}</span>
+            <button type="button" class="image-item-delete" onclick="this.closest('.image-list-item').remove()" title="移除此图"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="image-item-body">
+            <div class="image-item-preview">
+                <img id="${thumbId}" src="${imgSrc}" onerror="this.src='${defaultSvg}'">
+            </div>
+            <div class="image-item-controls">
+                <input type="file" name="image_files[]" id="${fileInputId}" accept="image/*" style="display:none;" onchange="previewLocalImage(this, '${thumbId}')">
+                
+                <label for="${fileInputId}" class="upload-btn">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> 点击选择本地图片
+                </label>
+                
+                <input type="text" name="image_urls[]" class="form-control" placeholder="或填写网络图片 URL..." value="${url}" oninput="document.getElementById('${thumbId}').src = this.value || '${defaultSvg}'">
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+function previewLocalImage(input, thumbId) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (!file.type.startsWith('image/')) {
+            alert('请选择图片文件！');
+            input.value = ''; 
+            return;
         }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById(thumbId).src = e.target.result;
+        }
+        reader.readAsDataURL(file);
     }
 }
 
@@ -247,7 +277,7 @@ function confirmMove() {
 
 /**
  * ----------------------------------------------------------------------------
- * 4. 编辑器相关逻辑 (WangEditor)
+ * 4. 编辑器与弹窗逻辑
  * ----------------------------------------------------------------------------
  */
 function initEditor() {
@@ -269,7 +299,6 @@ function initEditor() {
                 server: 'upload.php',
                 fieldName: 'wangeditor-uploaded-image',
                 maxFileSize: 5 * 1024 * 1024,
-                // 显示上传错误信息
                 onError(file, err, res) {
                     alert('图片上传失败: ' + (res && res.message ? res.message : err.message));
                 }
@@ -300,11 +329,15 @@ function openModal() {
         document.getElementById('artTitle').value = ''; 
         document.getElementById('artRec').checked = false;
         document.getElementById('artHide').checked = false;
-        document.getElementById('artCover').value = '';
         document.getElementById('artTags').value = '';
         document.getElementById('artSummary').value = '';
-        document.getElementById('coverFile').value = '';
-        document.getElementById('cover-preview-box').style.display = 'none';
+        
+        document.getElementById('artMediaType').value = 'images';
+        toggleMediaMode();
+        document.getElementById('image-list-container').innerHTML = '';
+        addImageInput(); 
+        document.getElementById('vCoverUrl').value = '';
+        document.getElementById('vUrl').value = '';
         
         form.reset(); 
         if(editor) editor.setHtml(''); 
@@ -324,17 +357,31 @@ function editArticle(id) {
                     document.getElementById('artTitle').value = d.title;
                     document.getElementById('artCategory').value = d.category;
                     document.getElementById('artSummary').value = d.summary;
-                    document.getElementById('artCover').value = d.cover_image;
                     document.getElementById('artTags').value = d.tags;
                     document.getElementById('artRec').checked = (d.is_recommended == 1);
                     document.getElementById('artHide').checked = (d.is_hidden == 1);
-                    document.getElementById('coverFile').value = '';
                     
-                    if(d.cover_image) {
-                        previewUrl(d.cover_image);
+                    document.getElementById('artMediaType').value = d.media_type || 'images';
+                    toggleMediaMode();
+                    
+                    document.getElementById('image-list-container').innerHTML = '';
+                    if (d.media_type === 'video') {
+                        let md = {};
+                        try { md = JSON.parse(d.media_data || '{}') } catch(e){}
+                        document.getElementById('vCoverUrl').value = md.cover || d.cover_image || '';
+                        document.getElementById('vUrl').value = md.video || '';
                     } else {
-                        document.getElementById('cover-preview-box').style.display = 'none';
+                        let md = [];
+                        try { md = JSON.parse(d.media_data || '[]') } catch(e){}
+                        if (md.length > 0) {
+                            md.forEach(url => addImageInput(url));
+                        } else if (d.cover_image) {
+                            addImageInput(d.cover_image); 
+                        } else {
+                            addImageInput();
+                        }
                     }
+
                     if(editor) editor.setHtml(d.content); 
                 }, 100);
             } else {
@@ -355,11 +402,339 @@ function closeModal() {
     }, 300);
 }
 
+/**
+ * ----------------------------------------------------------------------------
+ * 5. 小红书风格：笔记卡片生成器逻辑
+ * ----------------------------------------------------------------------------
+ */
+const noteBgTemplates = [
+    // --- 原有基础模板 ---
+    { name: '纯净白', type: 'color', value: '#ffffff' },
+    { name: '暗夜黑', type: 'color', value: '#1e293b', fontColor: '#ffffff' },
+    { name: '晚霞紫', type: 'gradient', value: ['#fbc2eb', '#a6c1ee'] },
+    { name: '蜜桃粉', type: 'gradient', value: ['#ff9a9e', '#fecfef'] },
+    { name: '手账网格', type: 'pattern_grid', value: { bg: '#faf9f5', line: '#e2dfd5' } },
+    { name: '可爱波点', type: 'pattern_dots', value: { bg: '#fff0f5', dot: '#ffb6c1' } },
+    
+    // --- 新增 20 个绝美模板 ---
+    // 纯色系 (莫兰迪高级感)
+    { name: '燕麦奶茶', type: 'color', value: '#F5F0E6' },
+    { name: '灰豆绿', type: 'color', value: '#D9E4DD' },
+    { name: '茱萸粉', type: 'color', value: '#F2D8D8' },
+    { name: '克莱因蓝', type: 'color', value: '#002FA7', fontColor: '#ffffff' },
+    { name: '复古牛皮', type: 'color', value: '#D2B48C' },
+
+    // 渐变系 (情绪与自然)
+    { name: '日落黄昏', type: 'gradient', value: ['#ff7e5f', '#feb47b'], fontColor: '#ffffff' },
+    { name: '极光之森', type: 'gradient', value: ['#43e97b', '#38f9d7'], fontColor: '#1e293b' },
+    { name: '赛博霓虹', type: 'gradient', value: ['#f83600', '#f9d423'], fontColor: '#ffffff' },
+    { name: '深海浩瀚', type: 'gradient', value: ['#2b5876', '#4e4376'], fontColor: '#ffffff' },
+    { name: '微醺香槟', type: 'gradient', value: ['#eaddcf', '#f0e6e6'] },
+    { name: '初春樱花', type: 'gradient', value: ['#ffecd2', '#fcb69f'] },
+    { name: '星际迷航', type: 'gradient', value: ['#141E30', '#243B55'], fontColor: '#ffffff' },
+    { name: '冰川时代', type: 'gradient', value: ['#e0c3fc', '#8ec5fc'] },
+    { name: '夏日橘子', type: 'gradient', value: ['#f6d365', '#fda085'], fontColor: '#ffffff' },
+
+    // 高清图片系 (自动调用 Unsplash 图片库)
+    { name: '大理石纹', type: 'image', value: 'https://images.unsplash.com/photo-1518331647614-7a1f04cd34cf?q=80&w=1080&auto=format&fit=crop', fontColor: '#333333' },
+    { name: '宣纸纹理', type: 'image', value: 'https://images.unsplash.com/photo-1603513492128-ba7bc9b3e143?q=80&w=1080&auto=format&fit=crop', fontColor: '#333333' },
+    { name: '自然绿叶', type: 'image', value: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=1080&auto=format&fit=crop', fontColor: '#ffffff' },
+    { name: '落日晚霞', type: 'image', value: 'https://images.unsplash.com/photo-1509803874385-db7c23652552?q=80&w=1080&auto=format&fit=crop', fontColor: '#ffffff' },
+    { name: '抽象流体', type: 'image', value: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1080&auto=format&fit=crop', fontColor: '#ffffff' },
+    { name: '极简静物', type: 'image', value: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1080&auto=format&fit=crop', fontColor: '#333333' }
+];
+
+let currentNoteBg = noteBgTemplates[0];
+
+// 新增：更新字体显示标签的方法
+function updateFontSizeLabel() {
+    const size = document.getElementById('noteTextSize').value;
+    document.getElementById('noteTextSizeVal').innerText = size + 'px';
+}
+
+// ====== 新增：更新背景模糊显示标签 ======
+function updateBgBlurLabel() {
+    const blur = document.getElementById('noteBgBlur').value;
+    document.getElementById('noteBgBlurVal').innerText = blur + 'px';
+}
+
+function initNoteBgs() {
+    const container = document.getElementById('noteBgOptions');
+    container.innerHTML = '';
+    noteBgTemplates.forEach((bg, idx) => {
+        const div = document.createElement('div');
+        div.className = 'note-bg-item' + (idx === 0 ? ' active' : '');
+        
+        if (bg.type === 'color') {
+            div.style.background = bg.value;
+        } else if (bg.type === 'gradient') {
+            div.style.background = `linear-gradient(135deg, ${bg.value[0]}, ${bg.value[1]})`;
+        } else if (bg.type === 'pattern_grid') {
+            div.style.backgroundColor = bg.value.bg;
+            div.style.backgroundImage = `linear-gradient(${bg.value.line} 1px, transparent 1px), linear-gradient(90deg, ${bg.value.line} 1px, transparent 1px)`;
+            div.style.backgroundSize = '10px 10px';
+        } else if (bg.type === 'pattern_dots') {
+            div.style.backgroundColor = bg.value.bg;
+            div.style.backgroundImage = `radial-gradient(${bg.value.dot} 2px, transparent 2px)`;
+            div.style.backgroundSize = '14px 14px';
+        } else if (bg.type === 'image') {
+            div.style.backgroundImage = `url(${bg.value})`;
+            div.style.backgroundSize = 'cover';
+            div.style.backgroundPosition = 'center';
+            div.style.color = '#fff';
+            div.style.textShadow = '0 1px 2px rgba(0,0,0,0.5)';
+        }
+        
+        if (bg.value === '#1e293b') div.style.color = '#fff'; 
+
+        div.innerText = bg.name;
+        
+        div.onclick = () => {
+            document.querySelectorAll('.note-bg-item').forEach(el => el.classList.remove('active'));
+            div.classList.add('active');
+            currentNoteBg = bg;
+            
+            if(bg.fontColor) {
+                document.getElementById('noteTextColor').value = bg.fontColor;
+            } else if(bg.value !== '#1e293b') {
+                document.getElementById('noteTextColor').value = '#333333';
+            }
+            
+            drawNoteCard();
+        };
+        container.appendChild(div);
+    });
+}
+
+function openNoteModal() {
+    document.getElementById('noteModal').classList.add('active');
+    initNoteBgs();
+    
+    const textInput = document.getElementById('noteTextInput');
+    if(!textInput.value) {
+        textInput.value = "如何看待生活？\n\n生活就像一盒巧克力，\n你永远不知道下一块会是什么味道。";
+    }
+    
+    setTimeout(drawNoteCard, 100); 
+}
+
+function closeNoteModal() {
+    document.getElementById('noteModal').classList.remove('active');
+}
+
+function drawNoteCard() {
+    const canvas = document.getElementById('noteCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    const text = document.getElementById('noteTextInput').value;
+    const textColor = document.getElementById('noteTextColor').value;
+    document.getElementById('noteTextColorVal').innerText = textColor;
+
+    // 获取模糊度数值
+    const blurInput = document.getElementById('noteBgBlur');
+    const blurVal = blurInput ? parseInt(blurInput.value) : 0;
+
+    const cw = 1080;
+    const ch = 1440;
+    
+    ctx.clearRect(0, 0, cw, ch);
+    
+    // 辅助函数：重置滤镜并绘制文字 (必须重置，否则文字也会跟着模糊)
+    const finalizeDraw = () => {
+        ctx.filter = 'none'; 
+        renderNoteText(ctx, text, textColor, cw, ch);
+    };
+
+    // 设置 Canvas 滤镜
+    ctx.filter = `blur(${blurVal}px)`;
+    
+    // 核心细节：模糊会导致边缘漏出画布外的透明色，形成白边。
+    // 解决方案：向外扩展绘制区域 (扩展距离 = 模糊半径 * 2)
+    const expand = blurVal * 2; 
+    
+    if (currentNoteBg.type === 'color') {
+        ctx.fillStyle = currentNoteBg.value;
+        ctx.fillRect(-expand, -expand, cw + expand*2, ch + expand*2);
+        finalizeDraw();
+    } 
+    else if (currentNoteBg.type === 'gradient') {
+        const grad = ctx.createLinearGradient(0, 0, cw, ch);
+        grad.addColorStop(0, currentNoteBg.value[0]);
+        grad.addColorStop(1, currentNoteBg.value[1]);
+        ctx.fillStyle = grad;
+        ctx.fillRect(-expand, -expand, cw + expand*2, ch + expand*2);
+        finalizeDraw();
+    } 
+    else if (currentNoteBg.type === 'pattern_grid') {
+        ctx.fillStyle = currentNoteBg.value.bg;
+        ctx.fillRect(-expand, -expand, cw + expand*2, ch + expand*2);
+        ctx.strokeStyle = currentNoteBg.value.line;
+        ctx.lineWidth = 2;
+        for(let i = -expand; i < cw + expand; i += 60) { ctx.beginPath(); ctx.moveTo(i, -expand); ctx.lineTo(i, ch + expand); ctx.stroke(); }
+        for(let j = -expand; j < ch + expand; j += 60) { ctx.beginPath(); ctx.moveTo(-expand, j); ctx.lineTo(cw + expand, j); ctx.stroke(); }
+        finalizeDraw();
+    } 
+    else if (currentNoteBg.type === 'pattern_dots') {
+        ctx.fillStyle = currentNoteBg.value.bg;
+        ctx.fillRect(-expand, -expand, cw + expand*2, ch + expand*2);
+        ctx.fillStyle = currentNoteBg.value.dot;
+        let row = 0;
+        for(let j = 30 - expand; j < ch + 60 + expand; j += 60) {
+            let offsetX = (row % 2 === 0) ? 30 : 60;
+            for(let i = offsetX - expand; i < cw + 60 + expand; i += 60) {
+                ctx.beginPath(); ctx.arc(i, j, 6, 0, Math.PI*2); ctx.fill();
+            }
+            row++;
+        }
+        finalizeDraw();
+    }
+    else if (currentNoteBg.type === 'image') {
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; 
+        img.onload = () => {
+            const imgRatio = img.width / img.height;
+            const canvasRatio = cw / ch;
+            let drawW = cw, drawH = ch, offsetX = 0, offsetY = 0;
+            if (imgRatio > canvasRatio) {
+                drawW = ch * imgRatio;
+                offsetX = (cw - drawW) / 2;
+            } else {
+                drawH = cw / imgRatio;
+                offsetY = (ch - drawH) / 2;
+            }
+            // 包含扩展偏移量的图片绘制
+            ctx.drawImage(img, offsetX - expand, offsetY - expand, drawW + expand*2, drawH + expand*2);
+            finalizeDraw();
+        };
+        img.src = currentNoteBg.value;
+    }
+}
+
+function renderNoteText(ctx, text, textColor, cw, ch) {
+    ctx.fillStyle = textColor;
+    ctx.textBaseline = 'top';
+    
+    // 从新增的范围选择器中获取字体大小，默认为 56
+    const fontSizeInput = document.getElementById('noteTextSize');
+    const fontSize = fontSizeInput ? parseInt(fontSizeInput.value) : 56;
+    
+    const lineHeight = fontSize * 1.6;
+    ctx.font = `bold ${fontSize}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    
+    const paddingX = 100;
+    const maxWidth = cw - paddingX * 2;
+    let y = 150;
+
+    const paragraphs = text.split('\n');
+    
+    paragraphs.forEach(p => {
+        if (p === '') { y += lineHeight; return; }
+        let line = '';
+        for (let i = 0; i < p.length; i++) {
+            const char = p[i];
+            const testLine = line + char;
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && i > 0) {
+                ctx.fillText(line, paddingX, y);
+                line = char;
+                y += lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line, paddingX, y);
+        y += lineHeight;
+    });
+    
+    ctx.font = `32px sans-serif`;
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    if(textColor === '#ffffff') ctx.fillStyle = "rgba(255,255,255,0.4)";
+    const authorName = document.getElementById('artTitle').value || 'JS·Blog';
+    ctx.fillText("@" + authorName, cw - paddingX - ctx.measureText("@" + authorName).width, ch - 80);
+}
+
+async function generateAndInsertNote() {
+    const canvas = document.getElementById('noteCanvas');
+    const btn = document.getElementById('btnGenerateNote');
+    const originalText = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在生成上传...';
+    
+    try {
+        const base64Data = canvas.toDataURL('image/png');
+        
+        const formData = new URLSearchParams();
+        formData.append('action', 'upload_base64');
+        formData.append('image', base64Data);
+
+        const response = await fetch('articles.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        });
+        
+        const res = await response.json();
+        
+        if (res.success) {
+            document.getElementById('artMediaType').value = 'images';
+            toggleMediaMode();
+            addImageInput(res.url);
+            closeNoteModal();
+            alert('卡片生成成功，已添加至文章图片列表中！');
+        } else {
+            throw new Error(res.msg || '上传失败');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('生成错误：' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// 新增：处理自定义背景图片上传
+function uploadCustomNoteBg(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        
+        // 校验是否为图片
+        if (!file.type.startsWith('image/')) {
+            alert('请选择有效的图片文件！');
+            input.value = ''; 
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // 1. 取消预设模板的选中高亮状态
+            document.querySelectorAll('.note-bg-item').forEach(el => el.classList.remove('active'));
+            
+            // 2. 将当前背景对象替换为用户上传的图片 (Base64)
+            currentNoteBg = {
+                name: '自定义',
+                type: 'image',
+                value: e.target.result
+            };
+            
+            // 3. 重新绘制 Canvas 卡片
+            drawNoteCard();
+            
+            // 4. 清空 input 的值，确保下次选择同一张图片也能触发 onchange
+            input.value = '';
+        };
+        
+        // 以 DataURL 格式读取文件
+        reader.readAsDataURL(file);
+    }
+}
+
+// 绑定全局
 window.openAiModal = openAiModal;
 window.closeAiModal = closeAiModal;
 window.startAiGenerate = startAiGenerate;
-window.previewCover = previewCover;
-window.previewUrl = previewUrl;
 window.toggleSelect = toggleSelect;
 window.toggleAllCards = toggleAllCards;
 window.submitBatch = submitBatch;
@@ -368,3 +743,13 @@ window.confirmMove = confirmMove;
 window.openModal = openModal;
 window.editArticle = editArticle;
 window.closeModal = closeModal;
+window.toggleMediaMode = toggleMediaMode;
+window.addImageInput = addImageInput;
+window.previewLocalImage = previewLocalImage;
+window.openNoteModal = openNoteModal;
+window.closeNoteModal = closeNoteModal;
+window.drawNoteCard = drawNoteCard;
+window.generateAndInsertNote = generateAndInsertNote;
+window.updateFontSizeLabel = updateFontSizeLabel;
+window.updateBgBlurLabel = updateBgBlurLabel;
+window.uploadCustomNoteBg = uploadCustomNoteBg;

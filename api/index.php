@@ -3,18 +3,18 @@
  * api/index.php - BKCS 核心业务接口 (安全增强版)
  */
 /**
-                _ _                     ____  _                             
+                _ _                    ____  _                              
                | (_) __ _ _ __   __ _  / ___|| |__  _   _  ___              
             _  | | |/ _` | '_ \ / _` | \___ \| '_ \| | | |/ _ \             
            | |_| | | (_| | | | | (_| |  ___) | | | | |_| | (_) |            
             \___/|_|\__,_|_| |_|\__, | |____/|_| |_|\__,_|\___/             
-   ____   _____          _  __  |___/   _____   _   _  _          ____ ____ 
+   ____  _____          _  __  |___/  _____   _   _  _          ____ ____ 
   / ___| |__  /         | | \ \/ / / | |___ /  / | | || |        / ___/ ___|
- | |  _    / /       _  | |  \  /  | |   |_ \  | | | || |_      | |  | |    
+ | |  _    / /       _  | |  \  /  | |   |_ \  | | | || |_      | |  | |  
  | |_| |  / /_   _  | |_| |  /  \  | |  ___) | | | |__   _|  _  | |__| |___ 
   \____| /____| (_)  \___/  /_/\_\ |_| |____/  |_|    |_|   (_)  \____\____|
                                                                             
-                               追求极致的美学                               
+                                追求极致的美学                               
 **/
 ob_start();
 require_once __DIR__ . '/../includes/config.php';
@@ -94,11 +94,14 @@ if ($action == 'get_list') {
     exit;
 }
 
-// 2. 获取文章详情
+// 2. 获取文章详情 (已加入 users 连表查询头像，解决头像获取不到的问题)
 if ($action == 'get_article') {
     $id = intval($_GET['id']);
     $pdo->prepare("UPDATE articles SET views = views + 1 WHERE id = ?")->execute([$id]);
     
+    // 清除这篇旧文章的详情缓存，确保连表查询生效
+    delCache("article:$id");
+
     if (!($art = getCache("article:$id"))) {
         $stmt = $pdo->prepare("SELECT * FROM articles WHERE id = ?");
         $stmt->execute([$id]);
@@ -107,9 +110,17 @@ if ($action == 'get_article') {
     }
 
     if ($art) {
-        $stmt = $pdo->prepare("SELECT username, content, created_at FROM comments WHERE article_id = ? ORDER BY id DESC");
+        // 核心修复：连表查询 comments 和 users，获取真实 avatar 头像
+        $stmt = $pdo->prepare("
+            SELECT c.username, c.content, c.created_at, u.avatar 
+            FROM comments c 
+            LEFT JOIN users u ON c.user_id = u.id 
+            WHERE c.article_id = ? 
+            ORDER BY c.id DESC
+        ");
         $stmt->execute([$id]);
         $art['comments'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
         $art['is_liked'] = false;
         if (isset($_SESSION['user_id'])) {
             $stmt = $pdo->prepare("SELECT id FROM article_likes WHERE user_id=? AND article_id=?");
@@ -120,6 +131,7 @@ if ($action == 'get_article') {
         $st_rt->execute([$id]);
         $rt = $st_rt->fetch();
         $art['views'] = $rt['views']; $art['likes'] = $rt['likes'];
+        
         echo json_encode($art);
     } else { echo json_encode(['error' => 'Not Found']); }
     exit;
@@ -129,21 +141,18 @@ if ($action == 'get_article') {
 if ($action == 'comment') {
     if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false, 'msg'=>'请先登录']); exit; }
     
-    // CSRF 校验
     if (($_POST['csrf_token'] ?? '') !== ($_SESSION['csrf_token'] ?? '')) { 
         echo json_encode(['success'=>false, 'msg'=>'非法请求']); exit; 
     }
 
     $user_id = $_SESSION['user_id'];
 
-    // 封禁检查
     $stmt_user = $pdo->prepare("SELECT is_banned FROM users WHERE id = ?");
     $stmt_user->execute([$user_id]);
     if ($stmt_user->fetchColumn() == 1) { 
         echo json_encode(['success'=>false, 'msg'=>'您的账号已被封禁']); exit; 
     }
 
-    // 频率控制：60秒
     $cool_down = 60;
     if (isset($_SESSION['last_comment_time']) && (time() - $_SESSION['last_comment_time'] < $cool_down)) {
         $remain = $cool_down - (time() - $_SESSION['last_comment_time']);
@@ -153,7 +162,6 @@ if ($action == 'comment') {
     $article_id = intval($_POST['article_id']);
     $content = trim($_POST['content']);
     
-    // 长度校验
     if (mb_strlen($content, 'UTF-8') < 2 || mb_strlen($content, 'UTF-8') > 500) { 
         echo json_encode(['success'=>false, 'msg'=>'内容长度需在 2-500 字之间']); exit; 
     }
@@ -162,6 +170,10 @@ if ($action == 'comment') {
     if ($stmt->execute([$article_id, $_SESSION['nickname'], htmlspecialchars($content), $user_id])) {
         $_SESSION['last_comment_time'] = time();
         clearListCache(); 
+        
+        // 核心修复：发表评论后，必须清理这篇文章的详细缓存
+        delCache("article:$article_id"); 
+
         echo json_encode(['success' => true]);
     } else { 
         echo json_encode(['success' => false, 'msg' => '数据库写入失败']); 
@@ -193,7 +205,7 @@ if ($action == 'like') {
     exit;
 }
 
-// 5. 邮件逻辑 (保持之前的优化版)
+// 5. 邮件逻辑
 if ($action == 'send_email_code' || $action == 'send_reset_code') {
     require_once __DIR__ . '/../includes/email_helper.php';
     $email = trim($_POST['email'] ?? '');

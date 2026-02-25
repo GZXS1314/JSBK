@@ -2,26 +2,14 @@
  * ============================================================================
  * Photo Gallery Manager Stylesheet
  * ============================================================================
- * @description: 照片管理页面样式
- * @author:      jiang shuo
- * @update:      2026-1-1
  */
 /* ----------------------------------------------------------------------------
- * 1. General Components (通用组件)
+ * 1. General Components
  * ---------------------------------------------------------------------------- */
 .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px 18px;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 18px; border-radius: 8px; border: 1px solid transparent;
+    font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s;
 }
 .btn-primary { background-color: var(--primary); color: #fff; }
 .btn-primary:hover { opacity: 0.9; }
@@ -29,7 +17,7 @@
 .btn-ghost:hover { background: rgba(0,0,0,0.05); color: var(--text-main); }
 
 /* ----------------------------------------------------------------------------
- * 2. Forms (表单控件)
+ * 2. Forms
  * ---------------------------------------------------------------------------- */
 .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
 .form-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
@@ -54,12 +42,42 @@
 .upload-icon { font-size: 24px; color: var(--primary); margin-bottom: 8px; }
 .upload-text { color: var(--text-secondary); font-size: 13px; }
 
-/* 预览图片 */
-#preview-container { margin-top: 10px; display: none; }
-#preview-img { max-width: 100%; max-height: 150px; border-radius: 8px; border: 1px solid #e2e8f0; object-fit: contain; }
+/* [修改] 预览网格样式 */
+#preview-container { margin-top: 15px; display: none; width: 100%; }
+
+.preview-grid {
+    display: grid;
+    /* 自动填充，每列最小80px */
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    max-height: 200px; /* 限制高度，过多时滚动 */
+    overflow-y: auto;
+    padding-right: 4px; /* 滚动条空间 */
+}
+
+.preview-thumb {
+    position: relative;
+    aspect-ratio: 1; /* 正方形 */
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    background: #f1f5f9;
+}
+
+.preview-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 滚动条美化 */
+.preview-grid::-webkit-scrollbar { width: 4px; }
+.preview-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
 
 /* ----------------------------------------------------------------------------
- * 3. Modal (弹窗组件)
+ * 3. Modal
  * ---------------------------------------------------------------------------- */
 .modal-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -91,7 +109,7 @@
 }
 
 /* ----------------------------------------------------------------------------
- * 4. Photo Grid (照片网格)
+ * 4. Photo Grid (管理界面网格)
  * ---------------------------------------------------------------------------- */
 .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 20px; }
 
@@ -131,7 +149,7 @@
 .badge-hidden { position: absolute; top: 8px; right: 8px; background: rgba(148, 163, 184, 0.9); color: #f8fafc; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; z-index: 5; display: flex; align-items: center; gap: 4px; backdrop-filter: blur(2px); }
 
 /* ----------------------------------------------------------------------------
- * 5. Toolbar & Dropdown (工具栏与下拉菜单)
+ * 5. Toolbar & Dropdown
  * ---------------------------------------------------------------------------- */
 .toolbar {
     display: flex; align-items: center; gap: 8px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eef2ff; flex-wrap: wrap;
@@ -158,11 +176,24 @@
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ----------------------------------------------------------------------------
- * 6. Responsive (移动端适配)
+ * 6. Responsive (修正版)
  * ---------------------------------------------------------------------------- */
 @media (max-width: 640px) {
+    /* 照片保持两列 */
     .photo-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .form-row { flex-direction: column; gap: 0; }
+    
+    /* [修正] 强制表单行保持水平排列，避免输入框上下堆叠 */
+    .form-row { 
+        flex-direction: row; 
+        gap: 10px; 
+    }
+    
+    /* 微调移动端输入框字体和内边距，适应小空间 */
+    .form-control, select.form-control {
+        padding: 8px 10px; 
+        font-size: 13px;
+    }
+
     .toolbar { gap: 4px; }
     .toolbar .btn { font-size: 12px; padding: 6px 10px; }
 }

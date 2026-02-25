@@ -148,5 +148,56 @@ document.addEventListener('DOMContentLoaded', function() {
         if (memChart) memChart.resize();
         if (diskChart) diskChart.resize();
     });
+// ------------------------------------------------------------------------
+    // 5. Dashboard Update Checker (V3 - Pill Design Switch)
+    // ------------------------------------------------------------------------
+    window.checkVersionOnDashboard = function() {
+        // 注意这里选择器的变化
+        const module = document.querySelector('.update-pill'); 
+        const icon = document.getElementById('dash-update-icon');
+        const text = document.getElementById('dash-update-text');
+        const dot = document.getElementById('avatar-update-dot');
+        
+        if (!module || !icon || !text) return;
 
+        // 初始化状态
+        module.className = 'auth-badge update-pill'; 
+        icon.className = 'fas fa-sync-alt fa-spin-fast';
+        text.innerText = 'Checking...';
+        if(dot) dot.style.display = 'none';
+
+        fetch('updater.php?action=check')
+            .then(res => res.json())
+            .then(data => {
+                icon.classList.remove('fa-spin-fast');
+                
+                if (data.status === 'success' && data.has_update) {
+                    module.classList.add('has-update');
+                    icon.className = 'fas fa-arrow-alt-circle-up';
+                    text.innerHTML = `升级 v${data.info.version}`;
+                    if(dot) dot.style.display = 'block';
+                    
+                    if (typeof showUpdateModal === 'function') {
+                        window.updateDataCache = data.info; 
+                        showUpdateModal(data.info);
+                    }
+                } else {
+                    module.classList.add('is-latest');
+                    icon.className = 'fas fa-check-circle';
+                    text.innerText = `最新版本`;
+                    
+                    setTimeout(() => {
+                        module.className = 'auth-badge update-pill';
+                        icon.className = 'fas fa-code-branch';
+                        text.innerText = `v${data.current_version || '1.0.0'}`;
+                    }, 3000);
+                }
+            })
+            .catch(err => {
+                icon.className = 'fas fa-exclamation-triangle';
+                text.innerText = 'Error';
+            });
+    };
+
+    setTimeout(checkVersionOnDashboard, 1500);
 });

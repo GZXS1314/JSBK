@@ -175,7 +175,7 @@ require 'header.php';
 ?>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
-<link rel="stylesheet" href="assets/css/dashboard.css">
+<link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() ?>">
 
 <div class="dashboard-grid">
 
@@ -383,16 +383,37 @@ require 'header.php';
     </div>
 
     <div class="b-card area-author no-hover-bg">
-        <div class="auth-box">
-            <img src="<?= htmlspecialchars($settings['author_avatar'] ?: '../assets/default_avatar.png') ?>" class="auth-img" alt="Avatar">
-            <div style="font-size: 18px; font-weight: 700;"><?= htmlspecialchars($settings['author_name'] ?? 'Admin') ?></div>
-            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 15px;">Administrator</div>
-            <div style="display: flex; gap: 8px; width: 100%;">
-                <a href="../index.php" target="_blank" style="flex: 1; background: rgba(255,255,255,0.25); border-radius: 8px; padding: 8px; color: white; text-decoration: none; font-size: 12px; font-weight: 500; transition: background 0.2s;">
-                    <i class="fas fa-home"></i> 首页
+        <i class="fas fa-blog auth-bg-icon"></i>
+        
+        <div class="auth-content">
+            <div class="auth-profile">
+                <div class="avatar-wrapper">
+                    <img src="<?= htmlspecialchars($settings['author_avatar'] ?: '../assets/default_avatar.png') ?>" class="auth-img" alt="Avatar">
+                    <div class="update-dot" id="avatar-update-dot" style="display:none;"></div>
+                </div>
+                <div class="auth-info">
+                    <div class="auth-name"><?= htmlspecialchars($settings['author_name'] ?? 'Admin') ?></div>
+                    <div class="auth-role">Administrator</div>
+                </div>
+            </div>
+
+            <div class="auth-badges">
+                <div class="auth-badge static-badge">
+                    <i class="fab fa-js-square"></i>
+                    <span>JS Blog</span>
+                </div>
+                <div class="auth-badge update-pill" id="dash-update-module" onclick="checkVersionOnDashboard()" title="点击检测更新">
+                    <i class="fas fa-sync-alt" id="dash-update-icon"></i>
+                    <span id="dash-update-text">v<?= defined('APP_VERSION') ? APP_VERSION : '1.0.0' ?></span>
+                </div>
+            </div>
+
+            <div class="auth-actions">
+                <a href="../index.php" target="_blank" class="action-btn" title="前台首页">
+                    <i class="fas fa-rocket"></i> <span>前台首页</span>
                 </a>
-                <a href="settings.php" style="flex: 1; background: rgba(255,255,255,0.25); border-radius: 8px; padding: 8px; color: white; text-decoration: none; font-size: 12px; font-weight: 500; transition: background 0.2s;">
-                    <i class="fas fa-cog"></i> 设置
+                <a href="settings.php" class="action-btn" title="系统设置">
+                    <i class="fas fa-cog"></i> <span>系统设置</span>
                 </a>
             </div>
         </div>
@@ -450,6 +471,6 @@ require 'header.php';
     };
 </script>
 
-<script src="assets/js/dashboard.js"></script>
+<script src="assets/js/dashboard.js?v=<?= time() ?>"></script>
 
 <?php require 'footer.php'; ?>

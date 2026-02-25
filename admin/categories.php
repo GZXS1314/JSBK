@@ -18,43 +18,24 @@
 require_once '../includes/config.php';
 requireLogin();
 $pdo = getDB();
-$redis = getRedis(); // [新增] 获取 Redis 连接
+$redis = getRedis(); 
 
-// --- [新增] 辅助函数：清除相关缓存 ---
-/**
- * 清除与分类相关的缓存。
- * 分类的变动主要影响文章列表页（按分类筛选）和可能存在的前台分类导航。
- * 因此，我们需要清除文章列表的缓存和分类列表的缓存。
- */
 function clearRelatedCache() {
     global $redis;
-    // 如果 Redis 未连接或未启用，则直接返回
     if (!$redis) {
         return;
     }
-
-    // 1. 清除所有文章列表缓存 (因为分类是文章列表的重要维度)
-    //    这里的 'bkcs:list:*' 是根据 articles.php 推断出的模式
-    //    注意：keys命令在生产环境海量数据下慎用，但在后台管理操作中通常可接受
     $listKeys = $redis->keys('bkcs:list:*');
-    
-    // 修复点：增加非空和数组判断，防止报错
     if (!empty($listKeys) && is_array($listKeys)) {
-        // 使用 pipeline 提高批量删除效率
-        // 修复点：标准 Redis 扩展使用 multi(Redis::PIPELINE)
         $pipe = $redis->multi(Redis::PIPELINE);
         
         foreach ($listKeys as $key) {
             $pipe->del($key);
         }
         
-        // !!! 核心修复：将 execute() 改为 exec() !!!
-        // Phpredis 扩展的方法名是 exec()
         $pipe->exec();
     }
     
-    // 2. 清除可能存在的前台分类列表缓存
-    //    我们约定一个键名，例如 'bkcs:categories_list'
     $redis->del('bkcs:categories_list');
 }
 

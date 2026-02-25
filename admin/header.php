@@ -108,7 +108,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <i class="fas fa-bars"></i>
                     </div>
                     <div class="breadcrumb">
-                        <span>Aether OS /</span> <?= $current_page == 'index.php' ? 'Dashboard' : ucfirst(str_replace('.php','',$current_page)) ?>
+                        <span>JS Blog /</span> <?= $current_page == 'index.php' ? 'Dashboard' : ucfirst(str_replace('.php','',$current_page)) ?>
                     </div>
                 </div>
                 <div class="header-tools">
@@ -121,6 +121,58 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <!-- 
                    页面特定内容将从这里开始 
                 -->
+<style>
+    .update-modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px);
+        display: none; justify-content: center; align-items: center; z-index: 9999;
+        opacity: 0; transition: opacity 0.3s ease;
+    }
+    .update-modal-overlay.show { display: flex; opacity: 1; }
+    .update-modal {
+        background: white; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(20px); transition: transform 0.3s ease;
+    }
+    .update-modal-overlay.show .update-modal { transform: translateY(0); }
+    .update-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .update-icon { font-size: 24px; color: #3b82f6; background: #eff6ff; padding: 12px; border-radius: 50%; }
+    .update-title { font-size: 18px; font-weight: 600; color: #1e293b; margin: 0; }
+    .update-version { font-size: 14px; color: #10b981; font-weight: 500; }
+    .update-desc { font-size: 14px; color: #64748b; line-height: 1.5; margin-bottom: 20px; background: #f8fafc; padding: 12px; border-radius: 8px; max-height: 150px; overflow-y: auto;}
+    .update-actions { display: flex; gap: 12px; }
+    .btn-update { flex: 1; background: #3b82f6; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-update:hover { background: #2563eb; }
+    .btn-update:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-ignore { padding: 10px 16px; background: transparent; color: #64748b; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+    .btn-ignore:hover { background: #f1f5f9; color: #334155; }
+    .update-progress { display: none; margin-top: 15px; }
+    .progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .progress-fill { width: 0%; height: 100%; background: #10b981; transition: width 0.3s ease; }
+    .progress-text { font-size: 12px; color: #64748b; margin-top: 6px; text-align: center; }
+</style>
 
+<div class="update-modal-overlay" id="updateModal">
+    <div class="update-modal">
+        <div class="update-header">
+            <i class="fas fa-cloud-download-alt update-icon"></i>
+            <div>
+                <h3 class="update-title">发现新版本！</h3>
+                <div class="update-version" id="newVersionNumber">v...</div>
+            </div>
+        </div>
+        <div class="update-desc" id="updateLog">正在获取更新日志...</div>
+        
+        <div class="update-progress" id="updateProgressBox">
+            <div class="progress-bar"><div class="progress-fill" id="updateProgressFill"></div></div>
+            <div class="progress-text" id="updateProgressText">正在下载更新包...</div>
+        </div>
+
+        <div class="update-actions" id="updateActionBtns">
+            <button class="btn-ignore" onclick="closeUpdateModal()">暂不更新</button>
+            <button class="btn-update" id="btnDoUpdate" onclick="startUpdate()">立即更新</button>
+        </div>
+    </div>
+</div>
 <!-- 引入头部交互逻辑 JS -->
 <script src="assets/js/header.js"></script>

@@ -5,13 +5,13 @@
             _  | | |/ _` | '_ \ / _` | \___ \| '_ \| | | |/ _ \             
            | |_| | | (_| | | | | (_| |  ___) | | | | |_| | (_) |            
             \___/|_|\__,_|_| |_|\__, | |____/|_| |_|\__,_|\___/             
-   ____   _____          _  __  |___/   _____   _   _  _          ____ ____ 
+   ____  _____          _  __  |___/  _____  _  _  _          ____ ____  
   / ___| |__  /         | | \ \/ / / | |___ /  / | | || |        / ___/ ___|
- | |  _    / /       _  | |  \  /  | |   |_ \  | | | || |_      | |  | |    
- | |_| |  / /_   _  | |_| |  /  \  | |  ___) | | | |__   _|  _  | |__| |___ 
+ | |  _    / /       _  | |  \  /  | |   |_ \  | | | || |_      | |  | |   
+ | |_| |  / /_   _  | |_| |  /  \  | |  ___) | | | |__  _|  _  | |__| |___ 
   \____| /____| (_)  \___/  /_/\_\ |_| |____/  |_|    |_|   (_)  \____\____|
                                                                             
-                               追求极致的美学                               
+                               追求极致的美学                                
 **/
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("数据库连接失败: " . $e->getMessage());
             }
 
-            // 3. 创建数据库并导入 SQL (修复版逻辑)
+            // 3. 创建数据库并导入 SQL
             $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbName` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
             $pdo->exec("USE `$dbName`");
 
@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("找不到 install.sql 文件");
             }
 
-            // --- 核心修复：逐行解析 SQL，避免被文章内容中的分号截断 ---
+            // 逐行解析 SQL
             $sqlFile = fopen(SQL_FILE, 'r');
             if (!$sqlFile) throw new Exception("无法读取 install.sql");
 
@@ -143,14 +143,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     try {
                         $pdo->exec($queryBuffer);
                     } catch (PDOException $e) {
-                        // 记录错误但允许继续（防止非致命错误中断安装）
                         error_log("SQL Error: " . $e->getMessage());
                     }
                     $queryBuffer = ''; // 清空缓冲区
                 }
             }
             fclose($sqlFile);
-            // --- SQL 导入结束 ---
 
             // 4. 创建管理员账号
             $hashPass = password_hash($adminPass, PASSWORD_DEFAULT);
@@ -180,6 +178,9 @@ if (session_status() === PHP_SESSION_NONE) {
     ]);
     session_start();
 }
+
+// --- 0. 系统版本配置 ---
+define('APP_VERSION', '1.0.0'); // 初始版本号
 
 // --- 1. 数据库配置 ---
 define('DB_HOST', '__DB_HOST__');
@@ -263,7 +264,6 @@ function h($string) {
 // --- 5. 权限检查函数 ---
 function requireLogin() {
     if (empty($_SESSION['admin_logged_in'])) {
-        // 注意：请确保你的服务器配置支持此路径，或者修改为实际路径
         header('Location: ../admin-login'); 
         exit;
     }
@@ -665,7 +665,7 @@ PHP;
                 <input type="text" name="db_host" placeholder="数据库地址 (默认 localhost)" value="localhost">
             </div>
             <div class="form-group">
-                <input type="text" name="db_name" placeholder="数据库名 (例如 bkcs)" value="bkcs">
+                <input type="text" name="db_name" placeholder="数据库名 (例如 bkcs)" >
             </div>
             <div class="form-group">
                 <input type="text" name="db_user" placeholder="数据库账号">

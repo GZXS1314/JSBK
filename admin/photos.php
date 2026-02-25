@@ -1,19 +1,9 @@
 <?php
 // admin/photos.php
 /**
-                _ _                     ____  _                             
-               | (_) __ _ _ __   __ _  / ___|| |__  _   _  ___              
-            _  | | |/ _` | '_ \ / _` | \___ \| '_ \| | | |/ _ \             
-           | |_| | | (_| | | | | (_| |  ___) | | | | |_| | (_) |            
-            \___/|_|\__,_|_| |_|\__, | |____/|_| |_|\__,_|\___/             
-   ____   _____          _  __  |___/   _____   _   _  _          ____ ____ 
-  / ___| |__  /         | | \ \/ / / | |___ /  / | | || |        / ___/ ___|
- | |  _    / /       _  | |  \  /  | |   |_ \  | | | || |_      | |  | |    
- | |_| |  / /_   _  | |_| |  /  \  | |  ___) | | | |__   _|  _  | |__| |___ 
-  \____| /____| (_)  \___/  /_/\_\ |_| |____/  |_|    |_|   (_)  \____\____|
-                                                                            
-                               追求极致的美学                               
-**/
+ * Photo Gallery Manager
+ * Supports Batch Upload & Management
+ */
 // 1. 开启输出缓冲区
 ob_start();
 
@@ -41,7 +31,7 @@ function clearPhotoAndAlbumCache() {
 // --- 2. 处理 POST 请求 ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
-    // A. 批量操作
+    // A. 批量操作 (保持不变)
     if (isset($_POST['action']) && $_POST['action'] == 'batch_ops') {
         $ids = $_POST['ids'] ?? [];
         $type = $_POST['batch_type'] ?? '';
@@ -71,10 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    // B. 发布新照片
+    // B. [修改] 批量发布新照片
     if (isset($_POST['action']) && $_POST['action'] == 'upload_photo') {
         $album_id = intval($_POST['album_id'] ?? 0);
-        $title = trim($_POST['title'] ?? '');
+        $base_title = trim($_POST['title'] ?? ''); // 基础标题
         $device = trim($_POST['device'] ?? '');
         $is_featured = isset($_POST['is_featured']) ? 1 : 0;
         
@@ -83,37 +73,57 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt_cos->execute();
         $cosEnabled = $stmt_cos->fetchColumn(); 
 
-        if ($album_id > 0 && isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
-            $file = $_FILES['image_file'];
-            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-            
-            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
-                $newName = 'photo_' . date('Ymd_His_') . uniqid() . '.' . $ext;
-                $final_url = '';
+        // [核心修改] 检测 image_files 数组
+        if ($album_id > 0 && isset($_FILES['image_files'])) {
+            $files = $_FILES['image_files'];
+            // 获取上传文件数量
+            $file_count = count($files['name']);
+            $success_count = 0;
 
-                // COS 上传
-                if ($cosEnabled == '1') {
-                    require_once '../includes/cos_helper.php';
-                    $cosPath = 'uploads/' . date('Ym') . '/' . $newName;
-                    $cosUrl = uploadToCOS($file['tmp_name'], $cosPath);
-                    if ($cosUrl) $final_url = $cosUrl;
-                }
+            // 循环处理每一张图片
+            for ($i = 0; $i < $file_count; $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $tmp_name = $files['tmp_name'][$i];
+                    $name = $files['name'][$i];
+                    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
 
-                // 本地回退
-                if (empty($final_url)) {
-                    $uploadDirRel = '../assets/uploads/'; // 物理路径
-                    $uploadDirWeb = '/assets/uploads/';   // 网页路径
-                    if (!is_dir($uploadDirRel)) @mkdir($uploadDirRel, 0755, true);
-                    if (move_uploaded_file($file['tmp_name'], $uploadDirRel . $newName)) {
-                        $final_url = $uploadDirWeb . $newName;
+                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                        // 生成唯一文件名，防止重名
+                        $newName = 'photo_' . date('Ymd_His_') . uniqid() . '_' . $i . '.' . $ext;
+                        $final_url = '';
+
+                        // COS 上传
+                        if ($cosEnabled == '1') {
+                            require_once '../includes/cos_helper.php';
+                            $cosPath = 'uploads/' . date('Ym') . '/' . $newName;
+                            $cosUrl = uploadToCOS($tmp_name, $cosPath);
+                            if ($cosUrl) $final_url = $cosUrl;
+                        }
+
+                        // 本地回退
+                        if (empty($final_url)) {
+                            $uploadDirRel = '../assets/uploads/'; // 物理路径
+                            $uploadDirWeb = '/assets/uploads/';   // 网页路径
+                            if (!is_dir($uploadDirRel)) @mkdir($uploadDirRel, 0755, true);
+                            if (move_uploaded_file($tmp_name, $uploadDirRel . $newName)) {
+                                $final_url = $uploadDirWeb . $newName;
+                            }
+                        }
+
+                        if (!empty($final_url)) {
+                            // 如果用户没有填标题，默认空；如果填了，所有图片共用一个标题
+                            $this_title = $base_title;
+                            
+                            $stmt = $pdo->prepare("INSERT INTO photos (album_id, title, device, image_url, is_featured) VALUES (?, ?, ?, ?, ?)");
+                            $stmt->execute([$album_id, $this_title, $device, $final_url, $is_featured]);
+                            $success_count++;
+                        }
                     }
                 }
+            }
 
-                if (!empty($final_url)) {
-                    $stmt = $pdo->prepare("INSERT INTO photos (album_id, title, device, image_url, is_featured) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->execute([$album_id, $title, $device, $final_url, $is_featured]);
-                    clearPhotoAndAlbumCache();
-                }
+            if ($success_count > 0) {
+                clearPhotoAndAlbumCache();
             }
         }
     }
@@ -123,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
-// --- 3. 处理单个删除 ---
+// --- 3. 处理单个删除 (保持不变) ---
 if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
     $id = intval($_GET['id']);
     if ($id > 0) {
@@ -134,7 +144,7 @@ if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id']))
     header("Location: photos.php"); exit;
 }
 
-// --- 4. 数据读取 (核心优化：分页 + 筛选) ---
+// --- 4. 数据读取 (保持不变) ---
 
 // 获取所有相册供筛选和上传使用
 $albums = $pdo->query("SELECT * FROM albums ORDER BY sort_order ASC")->fetchAll();
@@ -143,7 +153,7 @@ $albums = $pdo->query("SELECT * FROM albums ORDER BY sort_order ASC")->fetchAll(
 $where = "WHERE 1=1";
 $params = [];
 
-// [新增] 按相册筛选
+// 按相册筛选
 $filter_album_id = isset($_GET['album_id']) ? intval($_GET['album_id']) : 0;
 if ($filter_album_id > 0) {
     $where .= " AND p.album_id = ?";
@@ -152,7 +162,7 @@ if ($filter_album_id > 0) {
 
 // 分页计算
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$pageSize = 24; // 每页24张，网格布局比较整齐
+$pageSize = 24; 
 $offset = ($page - 1) * $pageSize;
 
 // 1. 查询总数
@@ -168,22 +178,11 @@ $sql = "SELECT p.*, a.name as album_name
         LEFT JOIN albums a ON p.album_id = a.id 
         $where 
         ORDER BY p.id DESC 
-        LIMIT $offset, $pageSize";
+        LIMIT :offset, :limit";
 
 $stmt = $pdo->prepare($sql);
-// PDO bindParam在LIMIT中有时会有类型问题，这里直接拼在SQL里是安全的因为$offset和$pageSize是计算出来的整数
-// 或者再次 execute params
-// 为了简单起见，我们重新构造 execute 的参数，因为 LIMIT 最好直接用 bindValue
-$stmt = $pdo->prepare("SELECT p.*, a.name as album_name 
-                       FROM photos p 
-                       LEFT JOIN albums a ON p.album_id = a.id 
-                       $where 
-                       ORDER BY p.id DESC 
-                       LIMIT :offset, :limit");
-
-// 绑定筛选参数
 foreach ($params as $k => $v) {
-    $stmt->bindValue($k + 1, $v); // PDO索引从1开始
+    $stmt->bindValue($k + 1, $v); 
 }
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
@@ -195,7 +194,6 @@ ob_end_flush();
 ?>
 
 <link rel="stylesheet" href="assets/css/photos.css">
-<!-- [优化] 使用国内 CDN -->
 <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
 <style>
@@ -216,7 +214,7 @@ ob_end_flush();
         <span style="font-size: 14px; color: var(--text-tertiary); font-weight: 400; margin-left: 8px;">(共 <?= $totalRows ?> 张)</span>
     </h3>
     <button class="btn btn-primary" onclick="openModal()">
-        <i class="fas fa-cloud-upload-alt"></i> 上传新照片
+        <i class="fas fa-cloud-upload-alt"></i> 批量上传照片
     </button>
 </div>
 
@@ -244,7 +242,7 @@ ob_end_flush();
                 </div>
             </div>
             
-            <!-- [新增] 筛选功能 -->
+            <!-- 筛选功能 -->
             <div style="margin-left: auto; display: flex; align-items: center;">
                 <select class="filter-select" onchange="window.location.href='?album_id='+this.value">
                     <option value="0">全部相册</option>
@@ -271,7 +269,6 @@ ob_end_flush();
             <div class="photo-card" onclick="toggleSelect(this)">
                 <input type="checkbox" name="ids[]" value="<?= $p['id'] ?>" class="pc-checkbox" onclick="event.stopPropagation(); toggleSelect(this.closest('.photo-card'))">
                 <div class="pc-img-box">
-                    <!-- [优化] 懒加载 + 本地错误图 -->
                     <img src="<?= htmlspecialchars($p['image_url']) ?>" 
                          loading="lazy" 
                          onerror="this.src='assets/img/error.png'">
@@ -290,7 +287,7 @@ ob_end_flush();
             <?php endforeach; endif; ?>
         </div>
         
-        <!-- [新增] 分页条 -->
+        <!-- 分页条 -->
         <?php if($totalPages > 1): ?>
         <div class="pagination-bar">
             <div style="font-size: 14px; color: #64748b;">
@@ -298,7 +295,6 @@ ob_end_flush();
             </div>
             <div class="pagination">
                 <?php 
-                // 简单的分页逻辑，保留当前筛选参数
                 $qs = $filter_album_id > 0 ? "&album_id=$filter_album_id" : "";
                 ?>
                 <?php if($page > 1): ?>
@@ -319,39 +315,49 @@ ob_end_flush();
     </form>
 </div>
 
-<!-- 上传弹窗 (无变化，保持原样) -->
+<!-- 上传弹窗 [重点修改区域] -->
 <div class="modal-overlay" id="uploadModal" onclick="closeModal(event)">
     <div class="modal-content">
         <form id="uploadForm" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="action" value="upload_photo">
             
             <div class="modal-header">
-                <h3 class="modal-title">上传新照片</h3>
+                <h3 class="modal-title">批量上传照片</h3>
                 <button type="button" class="btn btn-ghost" style="padding: 4px 8px;" data-close="true"><i class="fas fa-times"></i></button>
             </div>
             
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="cover-upload" class="form-label">选择图片文件</label>
+                    <label for="cover-upload" class="form-label">选择图片文件 (可多选)</label>
                     <label for="cover-upload" class="upload-area">
-                        <input type="file" name="image_file" id="cover-upload" accept="image/*" onchange="previewImage(this)">
+                        <!-- [修改] name变更为数组，添加 multiple 属性，事件改为 previewImages -->
+                        <input type="file" name="image_files[]" id="cover-upload" accept="image/*" multiple onchange="previewImages(this)">
+                        
+                        <!-- 默认提示 -->
                         <div id="upload-prompt">
                             <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                            <div class="upload-text">点击或拖拽文件到此处上传</div>
+                            <div class="upload-text">点击或拖拽文件到此处 (支持多选)</div>
                         </div>
-                        <div id="preview-container">
-                            <img id="preview-img" src="">
+                        
+                        <!-- [修改] 新的预览网格容器 -->
+                        <div id="preview-container" style="display:none;">
+                            <div class="preview-grid" id="preview-grid">
+                                <!-- JS 将在这里动态插入 img 标签 -->
+                            </div>
+                            <div style="margin-top:8px; font-size:12px; color:#64748b; text-align:center;">
+                                已选中 <span id="selected-count" style="color:var(--primary); font-weight:bold;">0</span> 张照片准备上传
+                            </div>
                         </div>
                     </label>
                 </div>
                 
+                <!-- [样式修正] form-row 在移动端会强制 flex-direction: row -->
                 <div class="form-row">
                     <div class="form-group" style="flex-grow:1;">
                         <label class="form-label">所属相册 <span style="color:red">*</span></label>
                         <select name="album_id" class="form-control" required>
                             <option value="">-- 请选择 --</option>
                             <?php foreach($albums as $a): ?>
-                                <!-- 自动选中当前筛选的相册 -->
                                 <option value="<?= $a['id'] ?>" <?= $filter_album_id == $a['id'] ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($a['name']) ?>
                                 </option>
@@ -359,8 +365,8 @@ ob_end_flush();
                         </select>
                     </div>
                     <div class="form-group" style="flex-grow:1;">
-                        <label class="form-label">照片标题 (选填)</label>
-                        <input type="text" name="title" class="form-control" placeholder="山间清晨">
+                        <label class="form-label">统一标题 (选填)</label>
+                        <input type="text" name="title" class="form-control" placeholder="应用于所有照片">
                     </div>
                 </div>
                 
@@ -373,9 +379,9 @@ ob_end_flush();
             <div class="modal-footer">
                 <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
                     <input type="checkbox" name="is_featured" value="1" style="width:16px; height:16px; accent-color: #f59e0b;"> 
-                    <span style="color:#f59e0b; font-weight:bold;"><i class="fas fa-star"></i> 设为精选</span>
+                    <span style="color:#f59e0b; font-weight:bold;"><i class="fas fa-star"></i> 全部设为精选</span>
                 </label>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> 确认上传</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> 开始上传</button>
             </div>
         </form>
     </div>
