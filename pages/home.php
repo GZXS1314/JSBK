@@ -54,9 +54,84 @@ $btn3_link = conf('home_btn3_link', 'javascript:void(0)');
                 <div class="icon-item"><i class="fa-brands fa-angular"></i></div>
                 <div class="icon-item"><i class="fa-brands fa-js"></i></div>
                 <div class="icon-item"><i class="fa-brands fa-html5"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-react"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-vuejs"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-angular"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-js"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-html5"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-css3-alt"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-sass"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-bootstrap"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-figma"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-wordpress"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-react"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-vuejs"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-angular"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-js"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-html5"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-react"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-vuejs"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-angular"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-js"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-html5"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-css3-alt"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-sass"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-bootstrap"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-figma"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-wordpress"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-react"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-vuejs"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-angular"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-js"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-html5"></i></div>
             </div>
             
             <div class="icon-scroll row-2">
+                <div class="icon-item"><i class="fa-brands fa-php"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-node"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-python"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-java"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-docker"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-git-alt"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-linux"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-aws"></i></div>
+                <div class="icon-item"><i class="fa-solid fa-database"></i></div>
+                <div class="icon-item"><i class="fa-solid fa-terminal"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-php"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-node"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-python"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-java"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-docker"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-php"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-node"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-python"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-java"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-docker"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-git-alt"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-linux"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-aws"></i></div>
+                <div class="icon-item"><i class="fa-solid fa-database"></i></div>
+                <div class="icon-item"><i class="fa-solid fa-terminal"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-php"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-node"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-python"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-java"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-docker"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-php"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-node"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-python"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-java"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-docker"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-git-alt"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-linux"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-aws"></i></div>
+                <div class="icon-item"><i class="fa-solid fa-database"></i></div>
+                <div class="icon-item"><i class="fa-solid fa-terminal"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-php"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-node"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-python"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-java"></i></div>
+                <div class="icon-item"><i class="fa-brands fa-docker"></i></div>
                 <div class="icon-item"><i class="fa-brands fa-php"></i></div>
                 <div class="icon-item"><i class="fa-brands fa-node"></i></div>
                 <div class="icon-item"><i class="fa-brands fa-python"></i></div>
