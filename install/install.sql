@@ -53,7 +53,7 @@ CREATE TABLE `albums` (
 
 --
 -- 表的结构 `articles`
--- 核心修复：增加了 media_type 和 media_data 字段
+-- 核心修复：增加了 media_type, media_data, resource_data, password 字段
 --
 
 DROP TABLE IF EXISTS `articles`;
@@ -72,6 +72,8 @@ CREATE TABLE `articles` (
   `is_recommended` tinyint(1) DEFAULT '0' COMMENT '1:推荐 0:普通',
   `media_type` varchar(20) DEFAULT 'images' COMMENT 'images 或 video',
   `media_data` text COMMENT '多图URL数组 或 视频数据JSON',
+  `resource_data` text COMMENT '存储资源名称和链接JSON',
+  `password` varchar(255) DEFAULT NULL COMMENT '文章访问密码',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
