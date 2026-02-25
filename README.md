@@ -21,7 +21,7 @@
 ## 📸 界面预览 (Gallery)
 
 ### 🚀 现代化仪表盘 (V3 重构版)
-![Admin Dashboard](你的最新仪表盘截图URL)
+![Admin Dashboard](https://img.cdn1.vip/i/699bf0800c378_1771827328.webp)
 > **全新毛玻璃 (Glassmorphism) UI**：集成实时资源监控（CPU/内存/磁盘）、数据发布趋势及**在线版本管理面板**。
 
 ---
@@ -59,14 +59,6 @@
 2. 访问 `http://你的域名/install` 进入图形化安装向导。
 3. 按照提示完成数据库对接，系统将**自动生成** `config.php` 并锁定安装目录。
 
-### 3. Nginx 伪静态配置
-```nginx
-location / {
-    if (!-e $request_filename) {
-        rewrite  ^(.*)$  /index.php?s=$1  last;   break;
-    }
-}
-
 🔄 持续维护 (Maintenance)
 本项目已接入 Online Update 网络。
 
@@ -83,3 +75,11 @@ UI 参考:
 Aether Design / Glassmorphism Framework / https://blog.anheyu.com/(安和鱼)
 
 鸣谢: 感谢所有为 BKCS 提出建议的开发者。
+### 3. Nginx 伪静态配置
+```nginx
+location / {
+    if (!-e $request_filename) {
+        rewrite  ^(.*)$  /index.php?s=$1  last;   break;
+    }
+}
+
