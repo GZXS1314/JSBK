@@ -1,0 +1,192 @@
+:root { 
+    --bg: #f5f5f7; 
+    --primary: #007aff; 
+}
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
+}
+
+body {
+    background-color: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 禁止 Body 滚动 */
+}
+
+/* 顶部导航 */
+.chat-navbar {
+    height: 50px; 
+    background: #fff; 
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    padding: 0 15px; 
+    flex-shrink: 0; 
+    z-index: 10;
+}
+.back-btn { 
+    font-size: 16px; 
+    color: #333; 
+    text-decoration: none; 
+}
+.chat-title { 
+    font-weight: 600; 
+    font-size: 16px; 
+}
+.placeholder { 
+    width: 20px; 
+}
+
+/* 消息区域 */
+.chat-container {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto; /* 允许内部滚动 */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    background: #f5f5f7;
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
+}
+.chat-container::-webkit-scrollbar { 
+    display: none; 
+}
+
+/* 消息气泡 */
+.chat-msg { 
+    display: flex; 
+    gap: 10px; 
+    max-width: 85%; 
+    animation: fadeIn 0.3s ease; 
+}
+.chat-msg.self { 
+    align-self: flex-end; 
+    flex-direction: row-reverse; 
+}
+.chat-avatar { 
+    width: 36px; 
+    height: 36px; 
+    border-radius: 6px; 
+    flex-shrink: 0; 
+    background: #ddd; 
+    object-fit: cover; 
+}
+.msg-content { 
+    display: flex; 
+    flex-direction: column; 
+}
+.chat-name { 
+    font-size: 11px; 
+    color: #999; 
+    margin-bottom: 4px; 
+}
+.chat-msg.self .chat-name { 
+    text-align: right; 
+}
+.chat-bubble {
+    background: #fff; 
+    padding: 10px 14px; 
+    border-radius: 12px;
+    font-size: 15px; 
+    line-height: 1.5; 
+    color: #333;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    word-wrap: break-word; 
+    position: relative;
+}
+.chat-msg:not(.self) .chat-bubble { 
+    border-top-left-radius: 2px; 
+}
+.chat-msg.self .chat-bubble { 
+    background: #95ec69; 
+    border-top-right-radius: 2px; 
+}
+
+/* 底部输入框 */
+.input-area {
+    background: #f7f7f7; 
+    border-top: 1px solid #ddd;
+    padding: 10px; 
+    display: flex; 
+    gap: 10px; 
+    align-items: center;
+    flex-shrink: 0; 
+    position: relative; 
+    z-index: 20;
+}
+.chat-input {
+    flex: 1; 
+    padding: 10px; 
+    border: none; 
+    border-radius: 4px;
+    background: #fff; 
+    font-size: 16px; 
+    height: 40px;
+}
+.chat-input:focus { 
+    outline: none; 
+}
+.send-btn {
+    background: var(--primary); 
+    color: #fff; 
+    border: none;
+    padding: 0 15px; 
+    height: 40px; 
+    border-radius: 4px;
+    font-size: 14px; 
+    font-weight: bold; 
+    cursor: pointer;
+}
+.send-btn:disabled { 
+    background: #ccc; 
+}
+
+.emoji-btn { 
+    background: none; 
+    border: none; 
+    font-size: 24px; 
+    color: #666; 
+    padding: 0 5px; 
+    display: flex; 
+    align-items: center; 
+}
+
+.emoji-panel {
+    height: 0; 
+    overflow-y: auto; 
+    background: #f0f0f0; 
+    transition: height 0.3s ease;
+    display: grid; 
+    grid-template-columns: repeat(8, 1fr); 
+    gap: 5px; 
+    padding: 0;
+}
+.emoji-panel.open { 
+    height: 200px; 
+    padding: 10px; 
+    border-top: 1px solid #ddd; 
+}
+.emoji-item { 
+    font-size: 22px; 
+    text-align: center; 
+    padding: 5px; 
+    cursor: pointer;
+}
+
+@keyframes fadeIn { 
+    from { 
+        opacity: 0; 
+        transform: translateY(10px); 
+    } 
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    } 
+}

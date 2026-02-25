@@ -1,0 +1,261 @@
+:root {
+    --content-width: 1280px;
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --blur: 40px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+
+body {
+    font-family: "PingFang SC", "Microsoft YaHei", 'Outfit', sans-serif;
+    height: 100vh;
+    height: 100dvh; /* 核心适配：动态视口高度，防底部截断 */
+    overflow: hidden; display: flex;
+    justify-content: center; align-items: center;
+    background: #121212; color: #fff;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+
+/* --- 统一导航栏样式 --- */
+.navbar-wrapper {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: 70px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.navbar-wrapper.nav-idle { opacity: 0; transform: translateY(-20px); pointer-events: none; }
+
+.navbar-inner { 
+    height: 100%; display: flex; justify-content: space-between; align-items: center; 
+    max-width: var(--content-width); margin: 0 auto; padding: 0 20px; width: 100%;
+}
+
+.logo { font-size: 24px; font-weight: 800; letter-spacing: -1px; min-width: 100px; color: #fff; }
+
+.nav-links { display: flex; gap: 30px; position: absolute; left: 50%; transform: translateX(-50%); }
+.nav-links li a { 
+    font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.6); 
+    position: relative; padding: 5px 0; transition: color 0.3s; 
+    display: flex; align-items: center; gap: 8px; 
+}
+.nav-links li a i { font-size: 14px; transition: transform 0.3s ease; opacity: 0.8; }
+.nav-links li a:hover, .nav-links li a.active { color: #fff; }
+.nav-links li a:hover i, .nav-links li a.active i { transform: translateY(-1px); opacity: 1; }
+.nav-links li a::after { 
+    content: ''; position: absolute; bottom: -2px; left: 50%; width: 0; height: 2px; 
+    background: #fff; transition: all 0.3s; transform: translateX(-50%); border-radius: 2px; 
+}
+.nav-links li a:hover::after, .nav-links li a.active::after { width: 100%; } 
+
+.nav-right { display: flex; align-items: center; gap: 15px; }
+.search-box { position: relative; }
+.search-box input { 
+    background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.1); 
+    padding: 8px 15px 8px 35px; border-radius: 20px; width: 180px; 
+    font-size: 13px; height: 36px; color: #fff; outline: none;
+}
+.search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px; color: rgba(255,255,255,0.5); }
+
+.nav-user-btn { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.nav-avatar { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.3); object-fit: cover; }
+.nav-login-link { 
+    font-size: 13px; font-weight: 600; color: #fff; padding: 6px 16px; 
+    border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; text-decoration: none;
+    transition: 0.3s; background: rgba(255,255,255,0.05); cursor: pointer;
+    white-space: nowrap; flex-shrink: 0; 
+}
+.nav-login-link:hover { background: #fff; color: #000; border-color: #fff; }
+.nav-menu-btn { cursor: pointer; font-size: 20px; color: #fff; display: none; margin-left: 10px; }
+
+/* --- 移动端侧滑菜单 --- */
+.mobile-menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1999; opacity: 0; visibility: hidden; transition: 0.3s; backdrop-filter: blur(5px); }
+.mobile-menu-overlay.active { opacity: 1; visibility: visible; }
+.mobile-sidebar { 
+    position: fixed; top: 0; right: -300px; width: 300px; height: 100%; 
+    background: #1a1a1a; color: #fff; 
+    z-index: 2000; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+    box-shadow: -10px 0 40px rgba(0,0,0,0.5); 
+    display: flex; flex-direction: column; 
+}
+.mobile-sidebar.active { right: 0; }
+.m-header { padding: 60px 30px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.m-user-info { display: flex; align-items: center; gap: 15px; }
+.m-avatar { width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); }
+.m-username { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+.m-bio { font-size: 12px; color: #999; }
+.m-nav-list { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.m-nav-item { display: flex; align-items: center; gap: 15px; padding: 12px 15px; border-radius: 12px; font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.7); text-decoration: none; transition: 0.2s; }
+.m-nav-item i { width: 24px; text-align: center; }
+.m-nav-item:hover, .m-nav-item.active { background: rgba(255,255,255,0.1); color: #fff; }
+.m-footer { padding: 20px 30px 40px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; }
+.m-btn { flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; text-align: center; border: 1px solid rgba(255,255,255,0.2); color: #ccc; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+/* --- 播放器背景与卡片 --- */
+.bg-layer {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    background-size: cover; background-position: center;
+    filter: blur(60px) brightness(0.4); z-index: -1;
+    transition: background-image 0.8s ease; transform: scale(1.1);
+}
+.player-card {
+    width: 1000px; height: 650px;
+    background: var(--glass-bg); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--glass-border); border-radius: 40px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5); display: flex; overflow: hidden;
+    max-width: 95vw; max-height: 80vh; margin-top: 40px;
+}
+.current-track-area { flex: 0 0 45%; padding: 30px; border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+.album-art-container { width: 180px; height: 180px; border-radius: 50%; background: #000; border: 4px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; margin-top: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+.album-art { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; animation: rotate 25s linear infinite; animation-play-state: paused; }
+.album-art.playing { animation-play-state: running; }
+@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.track-info { text-align: center; margin-top: 15px; width: 100%; }
+.track-name { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; }
+.track-artist { font-size: 0.9rem; color: rgba(255,255,255,0.6); font-weight: 300; }
+.lyrics-mask { width: 100%; height: 200px; margin: 15px 0; overflow: hidden; position: relative; mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%); }
+.lyrics-list { list-style: none; transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1); transform: translateY(90px); text-align: center; }
+.lyric-line { font-size: 0.95rem; color: rgba(255, 255, 255, 0.3); padding: 10px 20px; transition: all 0.4s ease; min-height: 40px; display: flex; align-items: center; justify-content: center; }
+.lyric-line.active { color: #fff; font-weight: 600; font-size: 1.1rem; transform: scale(1.08); text-shadow: 0 0 15px rgba(255,255,255,0.5); }
+.controls { display: flex; align-items: center; gap: 30px; margin-bottom: 20px; }
+.btn { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 1.5rem; transition: 0.3s; }
+.btn:hover { color: #fff; transform: scale(1.1); }
+.btn-play { width: 60px; height: 60px; border-radius: 50%; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; }
+.playlist-area { flex: 1; padding: 30px; background: rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; }
+.playlist-header { font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; color: rgba(255,255,255,0.9); }
+.playlist-items { flex: 1; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.playlist-items::-webkit-scrollbar { display: none; }
+.track-item { display: flex; align-items: center; padding: 12px; border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
+.track-item.active { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.1); }
+.track-thumb { width: 40px; height: 40px; border-radius: 6px; margin: 0 15px; background: #333; object-fit: cover; flex-shrink: 0; }
+.item-title { font-size: 0.95rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-artist { font-size: 0.8rem; color: rgba(255,255,255,0.5); }
+
+.loading-overlay { position: absolute; inset: 0; background: #000; z-index: 2000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+.spinner { width: 30px; height: 30px; border: 3px solid #333; border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- 移动端弹窗专属基础样式 (默认隐藏) --- */
+.m-playlist-btn { display: none; background: none; border: none; color: rgba(255,255,255,0.6); font-size: 1.4rem; padding: 10px; cursor: pointer; transition: 0.3s; }
+.m-playlist-btn:hover { color: #fff; }
+.close-playlist-btn { display: none; background: none; border: none; color: rgba(255,255,255,0.6); font-size: 1.2rem; cursor: pointer; transition: 0.3s; padding: 5px; }
+.close-playlist-btn:hover { color: #fff; transform: rotate(90deg); }
+.playlist-overlay { display: none; }
+
+/* === 针对移动端(宽度 < 1024px) 的排版重构 === */
+@media (max-width: 1024px) {
+    .navbar-inner { padding: 0 15px; }
+    
+    /* 1. 顶部：强制干掉搜索框，腾出空间给菜单按钮 */
+    .nav-links, .search-box { display: none !important; } 
+    .nav-right { gap: 10px; } /* 缩小间距防拥挤 */
+    .nav-menu-btn { display: block !important; flex-shrink: 0; }
+    
+    /* 2. 主容器：使用动态高度 dvh 解决全面屏/底部黑条截断问题 */
+    .player-card { 
+        flex-direction: column; 
+        width: 100vw; 
+        height: 100vh; 
+        height: 100dvh; 
+        max-height: 100dvh; 
+        border-radius: 0; 
+        border: none; 
+        background: transparent; 
+        box-shadow: none; 
+        margin-top: 0; 
+        position: relative; 
+        overflow: hidden; 
+    }
+    
+    /* 3. 内部排版：改用 space-evenly 避免两头贴死边界 */
+    .current-track-area { 
+        flex: 1; 
+        border-right: none; 
+        padding: 15px; 
+        padding-top: 80px; 
+        padding-bottom: calc(20px + env(safe-area-inset-bottom));
+        justify-content: space-evenly; 
+    }
+
+    .album-art-container {
+        width: 45vw;
+        height: 45vw;
+        max-width: 250px;
+        max-height: 250px;
+        margin-top: 0;
+    }
+
+    .lyrics-mask {
+        flex: 0 1 auto; 
+        height: 15vh;
+        min-height: 60px;
+        max-height: 150px;
+        margin: 0;
+    }
+    
+    /* 4. 底部控件栏 */
+    .controls { 
+        width: 100%; 
+        justify-content: center; 
+        position: relative; 
+        gap: 20px; 
+        z-index: 50; 
+        margin-bottom: 0;
+    }
+    
+    /* 5. 播放列表呼出按钮：直接插到控制栏最右侧 */
+    .m-playlist-btn { 
+        display: flex !important; 
+        align-items: center; 
+        justify-content: center;
+        position: absolute; 
+        right: 0; 
+        font-size: 1.2rem; 
+        width: 44px;  
+        height: 44px;
+        z-index: 60;
+    }
+
+    /* 6. 播放列表弹窗本身 */
+    .playlist-area { 
+        position: absolute; 
+        bottom: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 60vh; 
+        height: 60dvh;
+        background: rgba(20, 20, 20, 0.95); 
+        backdrop-filter: blur(25px); 
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 24px 24px 0 0; 
+        z-index: 10000; 
+        padding: 20px; 
+        padding-bottom: env(safe-area-inset-bottom, 20px); 
+        transform: translateY(120%); /* 默认隐藏在屏幕正下方 */
+        opacity: 0; 
+        pointer-events: none; /* 彻底屏蔽幽灵点击 */
+        transition: transform 0.4s cubic-bezier(0.3, 1, 0.3, 1), opacity 0.3s; 
+        border-top: 1px solid rgba(255,255,255,0.1);
+        display: flex; flex-direction: column;
+    }
+    
+    .playlist-area.show { 
+        transform: translateY(0) !important; 
+        opacity: 1; 
+        pointer-events: auto; /* 弹出时恢复点击 */
+    }
+    .close-playlist-btn { display: block; }
+
+    /* 7. 弹窗背景遮罩 */
+    .playlist-overlay {
+        display: block;
+        position: absolute; 
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6); z-index: 9999;
+        opacity: 0; visibility: hidden; transition: 0.3s;
+    }
+    .playlist-overlay.show { opacity: 1; visibility: visible; }
+}

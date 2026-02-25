@@ -1,0 +1,199 @@
+/**
+ * ============================================================================
+ * Photo Gallery Manager Stylesheet
+ * ============================================================================
+ */
+/* ----------------------------------------------------------------------------
+ * 1. General Components
+ * ---------------------------------------------------------------------------- */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 18px; border-radius: 8px; border: 1px solid transparent;
+    font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s;
+}
+.btn-primary { background-color: var(--primary); color: #fff; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { background: rgba(0,0,0,0.05); color: var(--text-main); }
+
+/* ----------------------------------------------------------------------------
+ * 2. Forms
+ * ---------------------------------------------------------------------------- */
+.form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.form-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.form-control, select.form-control {
+    width: 100%; padding: 10px 14px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px;
+    background-color: #fff; font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none; appearance: none;
+}
+.form-control:focus, select.form-control:focus {
+    border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); outline: none;
+}
+.form-row { display: flex; gap: 16px; align-items: flex-end; }
+
+/* 上传区域 */
+.upload-area {
+    border: 2px dashed #e2e8f0; border-radius: 12px; padding: 24px;
+    text-align: center; cursor: pointer; transition: all 0.2s ease;
+    background-color: #fdfdff;
+}
+.upload-area:hover { border-color: var(--primary); background-color: rgba(79, 70, 229, 0.02); }
+.upload-area input[type=file] { display: none; }
+.upload-icon { font-size: 24px; color: var(--primary); margin-bottom: 8px; }
+.upload-text { color: var(--text-secondary); font-size: 13px; }
+
+/* [修改] 预览网格样式 */
+#preview-container { margin-top: 15px; display: none; width: 100%; }
+
+.preview-grid {
+    display: grid;
+    /* 自动填充，每列最小80px */
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    max-height: 200px; /* 限制高度，过多时滚动 */
+    overflow-y: auto;
+    padding-right: 4px; /* 滚动条空间 */
+}
+
+.preview-thumb {
+    position: relative;
+    aspect-ratio: 1; /* 正方形 */
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    background: #f1f5f9;
+}
+
+.preview-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 滚动条美化 */
+.preview-grid::-webkit-scrollbar { width: 4px; }
+.preview-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+
+/* ----------------------------------------------------------------------------
+ * 3. Modal
+ * ---------------------------------------------------------------------------- */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem;
+    opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal-overlay.active { opacity: 1; visibility: visible; }
+
+.modal-content {
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 100%; max-width: 560px; transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex; flex-direction: column;
+}
+.modal-overlay.active .modal-content { transform: scale(1); }
+
+.modal-header {
+    padding: 20px 24px; border-bottom: 1px solid #eef2ff;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.modal-title { font-size: 16px; font-weight: 600; color: var(--text-main); }
+.modal-body { padding: 24px; overflow-y: auto; max-height: 70vh; }
+.modal-footer {
+    padding: 16px 24px; border-top: 1px solid #eef2ff;
+    display: flex; justify-content: space-between; align-items: center;
+    background: #f8fafc; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+}
+
+/* ----------------------------------------------------------------------------
+ * 4. Photo Grid (管理界面网格)
+ * ---------------------------------------------------------------------------- */
+.card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 20px; }
+
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.photo-card {
+    background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding: 8px; position: relative; cursor: pointer; transition: all 0.2s ease;
+    display: flex; flex-direction: column; overflow: hidden; border: 2px solid transparent;
+}
+.photo-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
+.photo-card.selected { border-color: var(--primary); background-color: #f0fdfa; }
+
+.pc-img-box {
+    aspect-ratio: 4/3; overflow: hidden; border-radius: 8px; background: #f1f5f9; position: relative;
+}
+.pc-img-box img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+.photo-card:hover .pc-img-box img { transform: scale(1.05); }
+
+/* 复选框 */
+.pc-checkbox {
+    position: absolute; top: 8px; left: 8px; z-index: 10;
+    accent-color: var(--primary); width: 18px; height: 18px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); cursor: pointer;
+}
+
+.pc-info { padding: 12px 4px 4px; }
+.pc-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; color: var(--text-main); }
+.pc-album { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+/* 徽章 */
+.badge-hero { position: absolute; top: 8px; right: 8px; background: rgba(251, 191, 36, 0.9); color: #78350f; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; z-index: 5; display: flex; align-items: center; gap: 4px; backdrop-filter: blur(2px); }
+.badge-hidden { position: absolute; top: 8px; right: 8px; background: rgba(148, 163, 184, 0.9); color: #f8fafc; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; z-index: 5; display: flex; align-items: center; gap: 4px; backdrop-filter: blur(2px); }
+
+/* ----------------------------------------------------------------------------
+ * 5. Toolbar & Dropdown
+ * ---------------------------------------------------------------------------- */
+.toolbar {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eef2ff; flex-wrap: wrap;
+}
+
+.dropdown { position: relative; display: inline-block; }
+.dropdown:hover .dropdown-content { display: block; animation: fadeIn 0.2s ease; }
+
+.dropdown-content {
+    display: none; position: absolute; background-color: #fff; min-width: 160px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000;
+    border: 1px solid rgba(0,0,0,0.05); border-radius: 8px; padding: 6px 0;
+    top: 100%; left: 0; margin-top: 5px;
+}
+.dropdown-content::before { content: ""; position: absolute; top: -10px; left: 0; width: 100%; height: 10px; background: transparent; }
+
+.dropdown-item {
+    padding: 10px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px;
+    color: var(--text-main); font-size: 13px; cursor: pointer; transition: 0.1s;
+}
+.dropdown-item:hover { background-color: #f8fafc; color: var(--primary); }
+.dropdown-item i { width: 16px; text-align: center; color: var(--text-secondary); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ----------------------------------------------------------------------------
+ * 6. Responsive (修正版)
+ * ---------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+    /* 照片保持两列 */
+    .photo-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    
+    /* [修正] 强制表单行保持水平排列，避免输入框上下堆叠 */
+    .form-row { 
+        flex-direction: row; 
+        gap: 10px; 
+    }
+    
+    /* 微调移动端输入框字体和内边距，适应小空间 */
+    .form-control, select.form-control {
+        padding: 8px 10px; 
+        font-size: 13px;
+    }
+
+    .toolbar { gap: 4px; }
+    .toolbar .btn { font-size: 12px; padding: 6px 10px; }
+}
