@@ -21,9 +21,9 @@
 ## 📸 界面预览 (Gallery)
 
 ### 🚀 现代化仪表盘 (V3 重构版)
-![Admin Dashboard](<img width="1635" height="1309" alt="image" src="https://github.com/user-attachments/assets/1fe174bb-b54f-4f5c-b080-0026592b40c0" />
+![Admin Dashboard](<img width="1635" height="1309" alt="image" src="[https://github.com/user-attachments/assets/1fe174bb-b54f-4f5c-b080-0026592b40c0](https://bsyimg.luoca.net/imgtc/20260225/59d10bbdfa145366591f4de0b4223660.webp)" />
 )
-![微信交流群](<img width="1146" height="1611" alt="ca25404acbb04c7a5d42cab323d864c8" src="https://github.com/user-attachments/assets/ca164a27-5689-4fc0-a3bb-8fd4f5367abc" />
+![微信交流群](<img width="1146" height="1611" alt="ca25404acbb04c7a5d42cab323d864c8" src="[https://github.com/user-attachments/assets/ca164a27-5689-4fc0-a3bb-8fd4f5367abc](https://edgeoneimg.cdn.sn/i/699ebde7d155e_1772010983.webp)" />
 )
 > **全新毛玻璃 (Glassmorphism) UI**：集成实时资源监控（CPU/内存/磁盘）、数据发布趋势及**在线版本管理面板**。
 
