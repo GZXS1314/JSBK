@@ -47,15 +47,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-let updateDataCache = null;
-
 function checkForUpdates() {
     fetch('updater.php?action=check')
         .then(res => res.json())
         .then(data => {
             sessionStorage.setItem('updateChecked', 'true');
             if (data.status === 'success' && data.has_update) {
-                updateDataCache = data.info;
                 showUpdateModal(data.info);
             }
         })
@@ -66,6 +63,12 @@ function showUpdateModal(info) {
     document.getElementById('newVersionNumber').innerText = '最新版本: ' + info.version;
     // 将换行符转为 <br>
     document.getElementById('updateLog').innerHTML = info.changelog.replace(/\n/g, '<br>'); 
+    
+    // 【核心修复】：直接将数据绑定在按钮的 HTML 属性上，彻底杜绝变量丢失
+    const btn = document.getElementById('btnDoUpdate');
+    btn.dataset.version = info.version;
+    btn.dataset.downloadUrl = info.download_url;
+
     document.getElementById('updateModal').classList.add('show');
 }
 
@@ -74,10 +77,18 @@ window.closeUpdateModal = function() {
 }
 
 window.startUpdate = function() {
-    if (!updateDataCache) return;
+    const btn = document.getElementById('btnDoUpdate');
+    
+    // 从按钮本身读取数据
+    const targetVersion = btn.dataset.version;
+    const targetUrl = btn.dataset.downloadUrl;
+
+    if (!targetVersion || !targetUrl) {
+        alert('更新数据加载异常，请刷新页面重试！');
+        return;
+    }
     
     // UI 切换为更新中状态
-    const btn = document.getElementById('btnDoUpdate');
     const ignoreBtn = document.querySelector('.btn-ignore');
     const progressBox = document.getElementById('updateProgressBox');
     const progressText = document.getElementById('updateProgressText');
@@ -90,17 +101,25 @@ window.startUpdate = function() {
 
     // 发起更新请求
     let formData = new FormData();
-    formData.append('download_url', updateDataCache.download_url);
-    formData.append('version', updateDataCache.version);
+    formData.append('download_url', targetUrl);
+    formData.append('version', targetVersion);
 
     progressFill.style.width = '30%';
-    progressText.innerText = '正在下载并解压更新包，请勿关闭页面...';
+    progressText.innerText = '正在下载并解压更新包，过程较长请耐心等待...';
 
     fetch('updater.php?action=update', {
         method: 'POST',
         body: formData
     })
-    .then(res => res.json())
+    .then(res => res.text()) // 先作为文本接收，防止 PHP 致命错误导致 JSON 解析崩溃
+    .then(text => {
+        try {
+            return JSON.parse(text);
+        } catch(e) {
+            // 如果解析 JSON 失败，回显服务器错误信息
+            throw new Error('服务器端异常: ' + text.substring(0, 100) + '...');
+        }
+    })
     .then(data => {
         if (data.status === 'success') {
             progressFill.style.width = '100%';
@@ -116,7 +135,7 @@ window.startUpdate = function() {
         progressText.innerText = '更新出错: ' + err.message;
         progressText.style.color = '#ef4444';
         btn.disabled = false;
-        btn.innerText = '重试';
+        btn.innerHTML = '<i class="fas fa-rotate-right"></i> 重试';
         ignoreBtn.style.display = 'block';
     });
 }
