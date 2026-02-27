@@ -1,18 +1,8 @@
 <?php
 /**
-                _ _                     ____  _                             
-               | (_) __ _ _ __   __ _  / ___|| |__  _   _  ___              
-            _  | | |/ _` | '_ \ / _` | \___ \| '_ \| | | |/ _ \             
-           | |_| | | (_| | | | | (_| |  ___) | | | | |_| | (_) |            
-            \___/|_|\__,_|_| |_|\__, | |____/|_| |_|\__,_|\___/             
-   ____  _____          _  __  |___/  _____  _  _  _          ____ ____  
-  / ___| |__  /         | | \ \/ / / | |___ /  / | | || |        / ___/ ___|
- | |  _    / /       _  | |  \  /  | |   |_ \  | | | || |_      | |  | |   
- | |_| |  / /_   _  | |_| |  /  \  | |  ___) | | | |__  _|  _  | |__| |___ 
-  \____| /____| (_)  \___/  /_/\_\ |_| |____/  |_|    |_|   (_)  \____\____|
-                                                                            
-                               追求极致的美学                                
-**/
+ * JS Blog System Installer
+ * 追求极致的美学
+ **/
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
@@ -32,8 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $action = $_POST['action'] ?? '';
 
+    // --- 环境检测 ---
     if ($action === 'check_env') {
-        // 环境检测逻辑
         $results = [];
         
         // PHP版本
@@ -75,7 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
         }
 
-        // 总体判断
         $canInstall = true;
         foreach ($results as $r) {
             if (!$r['status']) $canInstall = false;
@@ -85,9 +74,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // --- 数据库连通性及空库检测 ---
+    if ($action === 'check_db') {
+        try {
+            $dbHost = trim($_POST['db_host']);
+            $dbName = trim($_POST['db_name']);
+            $dbUser = trim($_POST['db_user']);
+            $dbPass = trim($_POST['db_pass']);
+
+            $dsn = "mysql:host=$dbHost;charset=utf8mb4";
+            $pdo = new PDO($dsn, $dbUser, $dbPass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+            ]);
+
+            // 检查数据库是否存在
+            $stmt = $pdo->query("SHOW DATABASES LIKE '$dbName'");
+            if ($stmt->rowCount() == 0) {
+                // 库不存在，必定为空，可直接安装
+                echo json_encode(['success' => true, 'is_empty' => true]);
+                exit;
+            }
+
+            // 检查表是否存在
+            $pdo->exec("USE `$dbName`");
+            $stmt = $pdo->query("SHOW TABLES");
+            if ($stmt->rowCount() == 0) {
+                echo json_encode(['success' => true, 'is_empty' => true]);
+                exit;
+            }
+
+            // 非空
+            echo json_encode(['success' => true, 'is_empty' => false]);
+        } catch (PDOException $e) {
+            echo json_encode(['success' => false, 'message' => '数据库连接失败: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // --- 执行安装 ---
     if ($action === 'install') {
         try {
-            // 1. 验证输入
+            $mode = $_POST['install_mode'] ?? 'full'; // full, increment, skip
+            
             $dbHost = trim($_POST['db_host']);
             $dbName = trim($_POST['db_name']);
             $dbUser = trim($_POST['db_user']);
@@ -96,71 +124,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $adminUser = trim($_POST['admin_user']);
             $adminPass = trim($_POST['admin_pass']);
             
-            // Redis (可选)
             $redisHost = trim($_POST['redis_host']) ?: '127.0.0.1';
-            $redisPort = (int)(trim($_POST['redis_port']) ?: 6379); // 强制转整型
+            $redisPort = (int)(trim($_POST['redis_port']) ?: 6379);
             $redisPass = trim($_POST['redis_pass']);
 
             if (!$dbHost || !$dbName || !$dbUser || !$adminUser || !$adminPass) {
                 throw new Exception("请填写所有必填项");
             }
 
-            // 2. 连接数据库
-            try {
-                $dsn = "mysql:host=$dbHost;charset=utf8mb4";
-                $pdo = new PDO($dsn, $dbUser, $dbPass, [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-                ]);
-            } catch (PDOException $e) {
-                throw new Exception("数据库连接失败: " . $e->getMessage());
-            }
+            $dsn = "mysql:host=$dbHost;charset=utf8mb4";
+            $pdo = new PDO($dsn, $dbUser, $dbPass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
-            // 3. 创建数据库并导入 SQL
             $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbName` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
             $pdo->exec("USE `$dbName`");
 
-            if (!file_exists(SQL_FILE)) {
-                throw new Exception("找不到 install.sql 文件");
-            }
-
-            // 逐行解析 SQL
-            $sqlFile = fopen(SQL_FILE, 'r');
-            if (!$sqlFile) throw new Exception("无法读取 install.sql");
-
-            $queryBuffer = '';
-            while (($line = fgets($sqlFile)) !== false) {
-                $trimLine = trim($line);
-                
-                // 跳过空行和注释行
-                if (empty($trimLine) || strpos($trimLine, '--') === 0 || strpos($trimLine, '/*') === 0 || strpos($trimLine, '#') === 0) {
-                    continue;
+            // 根据模式决定是否导入SQL
+            if ($mode !== 'skip') {
+                if (!file_exists(SQL_FILE)) {
+                    throw new Exception("找不到 install.sql 文件");
                 }
 
-                $queryBuffer .= $line;
-                
-                // 只有当行尾是分号时，才认为语句结束
-                if (substr(rtrim($queryBuffer), -1) === ';') {
-                    try {
-                        $pdo->exec($queryBuffer);
-                    } catch (PDOException $e) {
-                        error_log("SQL Error: " . $e->getMessage());
+                $sqlFile = fopen(SQL_FILE, 'r');
+                if (!$sqlFile) throw new Exception("无法读取 install.sql");
+
+                $queryBuffer = '';
+                while (($line = fgets($sqlFile)) !== false) {
+                    $trimLine = trim($line);
+                    
+                    if (empty($trimLine) || strpos($trimLine, '--') === 0 || strpos($trimLine, '/*') === 0 || strpos($trimLine, '#') === 0) {
+                        continue;
                     }
-                    $queryBuffer = ''; // 清空缓冲区
+
+                    $queryBuffer .= $line;
+                    
+                    if (substr(rtrim($queryBuffer), -1) === ';') {
+                        // 如果是增量覆盖，剥离 DROP 语句，并将 CREATE TABLE 转为 IF NOT EXISTS
+                        if ($mode === 'increment') {
+                            if (stripos($queryBuffer, 'DROP TABLE') !== false) {
+                                $queryBuffer = ''; 
+                                continue;
+                            }
+                            $queryBuffer = preg_replace('/CREATE TABLE\s+`/', 'CREATE TABLE IF NOT EXISTS `', $queryBuffer);
+                        }
+
+                        try {
+                            $pdo->exec($queryBuffer);
+                        } catch (PDOException $e) {
+                            // 增量模式下忽略主键冲突和表已存在等错误
+                            if ($mode !== 'increment') {
+                                error_log("SQL Error: " . $e->getMessage());
+                            }
+                        }
+                        $queryBuffer = '';
+                    }
                 }
+                fclose($sqlFile);
             }
-            fclose($sqlFile);
 
-            // 4. 创建管理员账号
+            // 更新管理员账号 (分模式处理防覆盖出错)
             $hashPass = password_hash($adminPass, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO `admin` (`username`, `password`) VALUES (?, ?)");
-            $pdo->exec("TRUNCATE TABLE `admin`"); 
-            $stmt->execute([$adminUser, $hashPass]);
+            if ($mode === 'full') {
+                $pdo->exec("TRUNCATE TABLE `admin`"); 
+                $stmt = $pdo->prepare("INSERT INTO `admin` (`username`, `password`) VALUES (?, ?)");
+                $stmt->execute([$adminUser, $hashPass]);
+            } else {
+                // 增量/跳过模式：更新现有管理员，或插入新管理员
+                try {
+                    $check = $pdo->query("SELECT id FROM `admin` LIMIT 1");
+                    if ($check && $check->rowCount() > 0) {
+                        $stmt = $pdo->prepare("UPDATE `admin` SET `username` = ?, `password` = ?");
+                        $stmt->execute([$adminUser, $hashPass]);
+                    } else {
+                        $stmt = $pdo->prepare("INSERT INTO `admin` (`username`, `password`) VALUES (?, ?)");
+                        $stmt->execute([$adminUser, $hashPass]);
+                    }
+                } catch (Exception $e) { }
+            }
 
-            // 5. 更新站点名称设置
-            $stmt = $pdo->prepare("UPDATE `settings` SET `value` = ? WHERE `key_name` = 'site_name'");
-            $stmt->execute([$siteName]);
+            // 更新站点名称设置
+            try {
+                $stmt = $pdo->prepare("UPDATE `settings` SET `value` = ? WHERE `key_name` = 'site_name'");
+                $stmt->execute([$siteName]);
+            } catch (Exception $e) { }
 
-            // 6. 生成配置文件 config.php 
+            // 生成 config.php 
             $configTpl = <<<'PHP'
 <?php
 // includes/config.php
@@ -180,7 +227,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // --- 0. 系统版本配置 ---
-define('APP_VERSION', '1.0.0'); // 初始版本号
+define('APP_VERSION', '1.0.0');
 
 // --- 1. 数据库配置 ---
 define('DB_HOST', '__DB_HOST__');
@@ -196,7 +243,7 @@ define('REDIS_PASS', '__REDIS_PASS__');
 define('REDIS_DB', 0);
 define('CACHE_PREFIX', 'bkcs:');
 
-// --- 获取 Redis 连接 (已增加数据库物理开关校验) ---
+// --- 获取 Redis 连接 ---
 function getRedis() {
     static $redis = null;
     static $is_checked = false;
@@ -229,7 +276,6 @@ function getRedis() {
             $redis_conn->select(REDIS_DB);
             $redis = $redis_conn;
         } catch (Exception $e) {
-            error_log("Redis Connection Error: " . $e->getMessage());
             return null;
         }
     }
@@ -315,7 +361,7 @@ if (isset($_SESSION['user_id'])) {
 }
 ?>
 PHP;
-            // 替换变量
+            
             $configContent = str_replace(
                 ['__DB_HOST__', '__DB_NAME__', '__DB_USER__', '__DB_PASS__', '__REDIS_HOST__', '__REDIS_PORT__', '__REDIS_PASS__'],
                 [$dbHost, $dbName, $dbUser, $dbPass, $redisHost, $redisPort, $redisPass],
@@ -326,9 +372,7 @@ PHP;
                 throw new Exception("写入 config.php 失败，请检查 includes 目录权限");
             }
 
-            // 7. 创建锁定文件
             file_put_contents(LOCK_FILE, date('Y-m-d H:i:s'));
-
             echo json_encode(['success' => true]);
 
         } catch (Exception $e) {
@@ -345,7 +389,6 @@ PHP;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>系统安装向导</title>
     <style>
-        /* --- 极简黑白 & 毛玻璃风格 --- */
         :root {
             --bg-color: #f5f5f7;
             --card-bg: rgba(255, 255, 255, 0.75);
@@ -355,6 +398,7 @@ PHP;
             --border: rgba(0, 0, 0, 0.05);
             --error: #ff3b30;
             --success: #34c759;
+            --warning: #ff9500;
         }
 
         body {
@@ -369,7 +413,6 @@ PHP;
             overflow: hidden;
         }
 
-        /* 动态背景 */
         body::before {
             content: '';
             position: absolute;
@@ -414,206 +457,99 @@ PHP;
             z-index: 10;
         }
 
-        /* 标题与LOGO */
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin: 0;
-            letter-spacing: -0.5px;
-        }
-        .header p {
-            color: var(--text-sub);
-            font-size: 14px;
-            margin-top: 8px;
-        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 24px; font-weight: 600; margin: 0; letter-spacing: -0.5px; }
+        .header p { color: var(--text-sub); font-size: 14px; margin-top: 8px; }
 
-        /* 表单控件 */
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: var(--text-sub);
-        }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 8px; color: var(--text-sub); }
         input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 12px 16px;
-            background: rgba(255,255,255,0.5);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            font-size: 15px;
-            color: var(--text-main);
-            transition: 0.2s;
-            box-sizing: border-box;
-            outline: none;
+            width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.5);
+            border: 1px solid var(--border); border-radius: 12px; font-size: 15px;
+            color: var(--text-main); transition: 0.2s; box-sizing: border-box; outline: none;
         }
-        input:focus {
-            background: #fff;
-            border-color: rgba(0,0,0,0.2);
-            box-shadow: 0 0 0 4px rgba(0,0,0,0.03);
-        }
+        input:focus { background: #fff; border-color: rgba(0,0,0,0.2); box-shadow: 0 0 0 4px rgba(0,0,0,0.03); }
 
-        /* 按钮 */
         .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 14px;
-            width: 100%;
-            border-radius: 14px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background: var(--accent); color: #fff; border: none; padding: 14px;
+            width: 100%; border-radius: 14px; font-size: 15px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s; margin-top: 10px;
+            display: flex; justify-content: center; align-items: center;
         }
-        .btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        .btn:active {
-            transform: scale(0.98);
-        }
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+        .btn:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .btn-outline {
+            background: transparent; color: var(--accent); border: 1px solid var(--accent);
         }
 
-        /* 协议框 */
         .license-box {
-            height: 200px;
-            overflow-y: auto;
-            background: rgba(255,255,255,0.4);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 15px;
-            font-size: 13px;
-            color: #555;
-            line-height: 1.6;
-            margin-bottom: 20px;
+            height: 200px; overflow-y: auto; background: rgba(255,255,255,0.4);
+            border: 1px solid var(--border); border-radius: 12px; padding: 15px;
+            font-size: 13px; color: #555; line-height: 1.6; margin-bottom: 20px;
         }
-        /* 自定义滚动条 */
         .license-box::-webkit-scrollbar { width: 6px; }
         .license-box::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
 
-        /* 复选框 */
         .checkbox-wrapper {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            font-size: 14px;
-            color: var(--text-main);
-            cursor: pointer;
+            display: flex; align-items: center; margin-bottom: 20px; font-size: 14px; cursor: pointer;
         }
-        .checkbox-wrapper input {
-            margin-right: 10px;
-            accent-color: var(--accent);
-            width: 18px;
-            height: 18px;
-        }
+        .checkbox-wrapper input { margin-right: 10px; accent-color: var(--accent); width: 18px; height: 18px; }
 
-        /* 检测列表 */
-        .check-list {
-            margin-bottom: 20px;
-        }
+        .check-list { margin-bottom: 20px; }
         .check-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border);
-            font-size: 14px;
+            display: flex; justify-content: space-between; padding: 12px 0;
+            border-bottom: 1px solid var(--border); font-size: 14px;
         }
         .check-item:last-child { border-bottom: none; }
         .status-ok { color: var(--success); font-weight: 500; }
         .status-fail { color: var(--error); font-weight: 500; }
-        .status-warn { color: #f1c40f; font-weight: 500; }
+        .status-warn { color: var(--warning); font-weight: 500; }
 
-        /* Loading */
         .spinner {
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 0.8s linear infinite;
-            margin-right: 8px;
-            display: none;
+            width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite;
+            margin-right: 8px; display: none;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* 分组标题 */
         .group-title {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-sub);
-            margin: 20px 0 10px;
-            border-bottom: 1px solid var(--border);
+            font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-sub); margin: 20px 0 10px; border-bottom: 1px solid var(--border);
             padding-bottom: 5px;
         }
 
-        /* 成功弹窗遮罩 */
+        /* 模态弹窗 */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(5px);
-            z-index: 100;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
         .modal-overlay.show { opacity: 1; pointer-events: all; }
-        .success-card {
-            background: #fff;
-            padding: 40px;
-            border-radius: 24px;
-            text-align: center;
-            width: 90%;
-            max-width: 360px;
-            transform: scale(0.9);
+        .modal-card {
+            background: #fff; padding: 40px; border-radius: 24px; text-align: center;
+            width: 90%; max-width: 360px; transform: scale(0.9);
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .modal-overlay.show .success-card { transform: scale(1); }
+        .modal-overlay.show .modal-card { transform: scale(1); }
+        
         .icon-circle {
-            width: 60px;
-            height: 60px;
-            background: var(--success);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            color: #fff;
-            font-size: 30px;
+            width: 60px; height: 60px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; margin: 0 auto 20px;
+            color: #fff; font-size: 30px;
         }
-        .account-info {
-            background: #f5f5f7;
-            padding: 15px;
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: left;
-            font-size: 14px;
-        }
+        .icon-success { background: var(--success); }
+        .icon-warning { background: var(--warning); }
+
+        .account-info { background: #f5f5f7; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: left; font-size: 14px; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
         .info-row:last-child { margin-bottom: 0; }
         .info-label { color: var(--text-sub); }
         .info-val { font-weight: 600; }
+        
+        .btn-group-vertical { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
 
     </style>
 </head>
@@ -627,7 +563,7 @@ PHP;
             <p>请阅读并同意以下协议以继续</p>
         </div>
         <div class="license-box">
-           <center> <p><strong>JS博客系统使用许可协议</strong></p></center>
+           <center> <p><strong>JS Blog 系统使用许可协议</strong></p></center>
             <p>1. 本程序仅供个人学习、研究或非商业用途使用。</p>
             <p>2. 禁止利用本程序进行任何违法违规活动（包括但不限于发布色情、暴力、反动内容）。</p>
             <p>3. 作者不对使用本程序产生的任何数据丢失、法律风险承担责任。</p>
@@ -701,8 +637,8 @@ PHP;
 </div>
 
 <div class="modal-overlay" id="successModal">
-    <div class="success-card">
-        <div class="icon-circle">✔</div>
+    <div class="modal-card">
+        <div class="icon-circle icon-success">✔</div>
         <h2>安装成功！</h2>
         <p style="color:#666; margin-bottom:20px;">系统已顺利部署完成</p>
         
@@ -718,41 +654,49 @@ PHP;
         </div>
 
         <p style="font-size:12px; color:#ff3b30; margin-bottom: 20px;">出于安全考虑，请务必删除 install 目录</p>
-        <a href="../admin" class="btn">进入网站首页</a>
+        <a href="../admin" class="btn">进入网站后台</a>
+    </div>
+</div>
+
+<div class="modal-overlay" id="dbExistModal">
+    <div class="modal-card">
+        <div class="icon-circle icon-warning">!</div>
+        <h2 style="font-size: 20px;">发现已存在的数据表</h2>
+        <p style="color:#666; font-size: 13px; line-height: 1.5;">检测到目标数据库 <strong>非空</strong>，继续操作可能会影响现有数据，请选择安装策略：</p>
+        
+        <div class="btn-group-vertical">
+            <button class="btn" onclick="executeInstall('full')" style="background: var(--error);">全面覆盖 (清空原数据)</button>
+            <button class="btn btn-outline" onclick="executeInstall('increment')">增量覆盖 (保留数据并补齐结构)</button>
+            <button class="btn btn-outline" onclick="executeInstall('skip')" style="color:#555; border-color:#ccc;">不覆盖 (仅更新配置和管理员)</button>
+            <button class="btn btn-outline" onclick="closeDbModal()" style="border:none; color:var(--text-sub); margin-top:5px;">取消</button>
+        </div>
     </div>
 </div>
 
 <script>
     // 步骤切换控制
     function showStep(stepId) {
-        // 隐藏所有步骤
         document.querySelectorAll('.step-card').forEach(el => {
             el.classList.remove('active');
             el.style.opacity = '0';
             el.style.pointerEvents = 'none';
         });
         
-        // 显示目标步骤
         const target = document.getElementById(stepId);
         target.classList.add('active');
         target.style.opacity = '1';
         target.style.pointerEvents = 'all';
         
-        // 如果切到第二步，自动开始检测
-        if(stepId === 'step2') {
-            runEnvCheck();
-        }
+        if(stepId === 'step2') { runEnvCheck(); }
     }
 
-    // --- Step 1 逻辑 ---
+    // --- Step 1 ---
     const agreeCheck = document.getElementById('agreeCheck');
     const btnStep1 = document.getElementById('btnStep1');
-    agreeCheck.addEventListener('change', (e) => {
-        btnStep1.disabled = !e.target.checked;
-    });
+    agreeCheck.addEventListener('change', (e) => { btnStep1.disabled = !e.target.checked; });
     btnStep1.addEventListener('click', () => showStep('step2'));
 
-    // --- Step 2 逻辑 ---
+    // --- Step 2 ---
     async function runEnvCheck() {
         const listEl = document.getElementById('envList');
         const btnStep2 = document.getElementById('btnStep2');
@@ -765,63 +709,97 @@ PHP;
             let html = '';
             res.results.forEach(item => {
                 const cls = item.status ? 'status-ok' : (item.is_optional ? 'status-warn' : 'status-fail');
-                html += `
-                    <div class="check-item">
-                        <span>${item.name}</span>
-                        <span class="${cls}">${item.msg}</span>
-                    </div>
-                `;
+                html += `<div class="check-item"><span>${item.name}</span><span class="${cls}">${item.msg}</span></div>`;
             });
             listEl.innerHTML = html;
             btnStep2.disabled = !res.can_install;
-
         } catch (e) {
             listEl.innerHTML = '<div class="status-fail" style="text-align:center">检测接口请求失败</div>';
         }
     }
     document.getElementById('btnStep2').addEventListener('click', () => showStep('step3'));
 
-    // --- Step 3 逻辑 ---
+    // --- Step 3: 前置检测与最终执行 ---
     const btnInstall = document.getElementById('btnInstall');
-    btnInstall.addEventListener('click', async (e) => {
-        e.preventDefault(); // 防止表单默认提交
+    
+    // 按钮复位函数
+    function resetInstallBtn() {
+        btnInstall.disabled = false;
+        btnInstall.querySelector('.spinner').style.display = 'none';
+        document.getElementById('btnText').innerText = '立即安装';
+    }
+
+    // 关闭覆盖选项弹窗
+    function closeDbModal() {
+        document.getElementById('dbExistModal').classList.remove('show');
+        resetInstallBtn();
+    }
+
+    // 真正的安装执行流程
+    async function executeInstall(mode) {
+        document.getElementById('dbExistModal').classList.remove('show');
+        
+        btnInstall.disabled = true;
+        btnInstall.querySelector('.spinner').style.display = 'inline-block';
+        document.getElementById('btnText').innerText = '安装部署中...';
+
         const form = document.getElementById('installForm');
         const formData = new FormData(form);
         formData.append('action', 'install');
-
-        // UI Loading
-        btnInstall.disabled = true;
-        btnInstall.querySelector('.spinner').style.display = 'inline-block';
-        document.getElementById('btnText').innerText = '安装中...';
+        formData.append('install_mode', mode); // 附带覆盖模式指令
 
         try {
             const res = await fetch('', { method: 'POST', body: formData }).then(r => r.json());
-            
             if (res.success) {
-                // 获取用户输入的账号密码
-                const user = formData.get('admin_user');
-                const pass = formData.get('admin_pass');
-
-                // 填充到弹窗中
-                document.getElementById('resAdminUser').innerText = user;
-                document.getElementById('resAdminPass').innerText = pass; // 显示明文密码
-                
-                // 显示成功弹窗
-                const modal = document.getElementById('successModal');
-                modal.classList.add('show');
-                
+                document.getElementById('resAdminUser').innerText = formData.get('admin_user');
+                document.getElementById('resAdminPass').innerText = formData.get('admin_pass');
+                document.getElementById('successModal').classList.add('show');
             } else {
                 alert('安装失败: ' + (res.message || '未知错误'));
-                btnInstall.disabled = false;
-                btnInstall.querySelector('.spinner').style.display = 'none';
-                document.getElementById('btnText').innerText = '立即安装';
+                resetInstallBtn();
             }
         } catch (e) {
-            console.error(e);
             alert('请求发生错误，请检查控制台或网络连接');
-            btnInstall.disabled = false;
-            btnInstall.querySelector('.spinner').style.display = 'none';
-            document.getElementById('btnText').innerText = '立即安装';
+            resetInstallBtn();
+        }
+    }
+
+    // 点击立即安装按钮 -> 先走 check_db 逻辑
+    btnInstall.addEventListener('click', async (e) => {
+        e.preventDefault(); 
+        
+        const form = document.getElementById('installForm');
+        const formData = new FormData(form);
+        
+        if (!formData.get('db_name') || !formData.get('db_user') || !formData.get('admin_user') || !formData.get('admin_pass')) {
+            alert("请填写完整的必填项！"); return;
+        }
+
+        btnInstall.disabled = true;
+        btnInstall.querySelector('.spinner').style.display = 'inline-block';
+        document.getElementById('btnText').innerText = '正在检测连通性...';
+
+        formData.append('action', 'check_db');
+        try {
+            const checkRes = await fetch('', { method: 'POST', body: formData }).then(r => r.json());
+            
+            if (!checkRes.success) {
+                alert(checkRes.message);
+                resetInstallBtn();
+                return;
+            }
+
+            // 如果库是空的 -> 直接以 full 模式无感安装
+            if (checkRes.is_empty) {
+                executeInstall('full');
+            } else {
+                // 如果库非空 -> 弹出警告让用户决策
+                document.getElementById('dbExistModal').classList.add('show');
+            }
+            
+        } catch(e) {
+            alert('数据库检测失败，请检查填写是否正确或网络是否通畅');
+            resetInstallBtn();
         }
     });
 </script>
