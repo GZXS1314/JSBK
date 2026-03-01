@@ -167,10 +167,38 @@ document.addEventListener('DOMContentLoaded', () => {
         let lastMsgCount = 0;
 
         const loadChatMessages = () => {
-            fetch('api/index.php?action=get_messages')
+            fetch('api/chatroom.php?action=get_messages')
                 .then(res => res.json())
                 .then(res => {
                     if (!res.success) return;
+                    // ====== 【新增】实时动态监听禁言状态 ======
+                    const isMuted = res.is_muted;
+                    window.siteData.chatroomMuted = isMuted; // 同步全局变量
+                    
+                    const chatInputDOM = document.getElementById('chatInput');
+                    const chatSendBtnDOM = document.querySelector('.chat-send');
+                    const emojiBtnDOM = document.querySelector('.emoji-btn');
+
+                    if (chatInputDOM && chatSendBtnDOM) {
+                        if (isMuted) {
+                            // 锁定 UI
+                            chatInputDOM.disabled = true;
+                            chatInputDOM.placeholder = "当前聊天室已全体禁言";
+                            chatSendBtnDOM.disabled = true;
+                            chatSendBtnDOM.style.opacity = "0.5";
+                            chatSendBtnDOM.style.cursor = "not-allowed";
+                            if(emojiBtnDOM) { emojiBtnDOM.disabled = true; emojiBtnDOM.style.opacity = "0.5"; }
+                        } else {
+                            // 解除锁定（需结合登录状态）
+                            chatInputDOM.disabled = !window.siteData.isUserLogin;
+                            chatInputDOM.placeholder = window.siteData.isUserLogin ? "说点什么..." : "请先登录";
+                            chatSendBtnDOM.disabled = false;
+                            chatSendBtnDOM.style.opacity = "1";
+                            chatSendBtnDOM.style.cursor = "pointer";
+                            if(emojiBtnDOM) { emojiBtnDOM.disabled = false; emojiBtnDOM.style.opacity = "1"; }
+                        }
+                    }
+                    // ===========================================
                     const messages = res.data || [];
                     if (messages.length === lastMsgCount && lastMsgCount !== 0) return;
                     lastMsgCount = messages.length;
