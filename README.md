@@ -78,6 +78,12 @@ Aether Design / Glassmorphism Framework / https://blog.anheyu.com/(安和鱼)
 鸣谢: 感谢所有为 BKCS 提出建议的开发者。
 ### 3. Nginx 伪静态配置
 ```nginx
+# 1. 终极安全阻断规则
+if ($request_uri ~* ^/(pages|includes|install)/.*\.php) {
+    return 403;
+}
+
+# 2. 核心路由分发规则
 location / {
     try_files $uri $uri/ /index.php?$query_string;
 }
