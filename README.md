@@ -21,7 +21,7 @@
 ## 📸 界面预览 (Gallery)
 
 ### 🚀 现代化仪表盘 (V3 重构版)
-![Admin Dashboard](https://edgeoneimg.cdn.sn/i/69c0a5dceba5c_1774233052.webp)
+![Admin Dashboard](https://yunxiaoquan-1259323713.cos.ap-chengdu.myqcloud.com/2026/04/20260401022303563.jpg)
 ![Admin Dashboard](https://bsyimg.luoca.net/imgtc/20260225/59d10bbdfa145366591f4de0b4223660.webp)
 > **全新毛玻璃 (Glassmorphism) UI**：集成实时资源监控（CPU/内存/磁盘）、数据发布趋势及**在线版本管理面板**。
 
