@@ -1,6 +1,5 @@
 -- phpMyAdmin SQL Dump
--- 系统版本： 1.1.1 (包含第三方登录与积分系统)
--- 生成日期： 2026-03-14
+-- 系统版本： 1.1.9 (包含主题系统、第三方登录与积分系统、微信中控代理扫码)
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -45,7 +44,6 @@ CREATE TABLE `albums` (
 
 --
 -- 表的结构 `articles`
--- 包含 1.1.1 新增的 view_points 字段
 --
 
 DROP TABLE IF EXISTS `articles`;
@@ -210,6 +208,7 @@ CREATE TABLE `photos` (
   `is_featured` tinyint(1) DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `is_hidden` tinyint(1) DEFAULT '0' COMMENT '0显示 1隐藏',
+  `video_cover` varchar(255) DEFAULT NULL COMMENT '视频封面',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -217,7 +216,6 @@ CREATE TABLE `photos` (
 
 --
 -- 表的结构 `points_log`
--- 1.1.1 新增积分日志表
 --
 
 DROP TABLE IF EXISTS `points_log`;
@@ -308,7 +306,6 @@ INSERT INTO `settings` (`key_name`, `value`) VALUES
 ('social_github', ''),
 ('social_twitter', ''),
 ('wechat_qrcode', ''),
-('db_version', '1.1.2'),
 ('about_avatar_tags', '["全栈开发一条龙", "架构设计爱好者", "极客安全狂热粉", "疑难杂症清道夫", "细节强迫症晚期", "热爱开源与分享", "代码如诗行动派", "终身学习践行者"]'),
 ('about_motto_title', '源于<br>热爱而去创造'),
 ('about_motto_tag', '代码与设计'),
@@ -343,7 +340,7 @@ INSERT INTO `settings` (`key_name`, `value`) VALUES
 ('points_login', '10'),
 ('points_comment', '2'),
 ('points_like', '1'),
-('points_share', '5');
+('points_share', '5'),
 ('points_exchange_rate', '100'),
 ('pay_channel', 'epay'),
 ('epay_url', ''),
@@ -356,9 +353,25 @@ INSERT INTO `settings` (`key_name`, `value`) VALUES
 ('wxpay_mchid', ''),
 ('wxpay_serial_no', ''),
 ('wxpay_private_key', ''),
-('wxpay_key', '');
+('wxpay_key', ''),
+('active_theme', 'default'),
+('custom_css', ''),
+('custom_js', ''),
+('about_photo_bg', 'https://yunxiaoquan-1259323713.cos.ap-chengdu.myqcloud.com/uploads/202603/20260301_181411_69a4117341dd4.jpg'),
+('official_qq_appid', ''),
+('official_qq_appkey', ''),
+('official_wx_appid', ''),
+('official_wx_appsecret', ''),
+('official_mp_wx_appid', ''),
+('official_mp_wx_appsecret', ''),
+('official_mp_wx_token', ''),
+('official_dy_clientkey', ''),
+('official_dy_clientsecret', ''),
+('wx_proxy_enabled', '0'),
+('wx_proxy_api_url', 'http://api.jx1314.cc'),
+('theme_options_default', '{"home_slogan_main":"人生如棋<br>落子无悔","home_slogan_sub":"code with passing","author_name":"江硕","author_avatar":"https://yunxiaoquan-1259323713.cos.ap-chengdu.myqcloud.com/2025/12/20251222050918327.png","author_bio":"蓦然回首，那人却在灯火阑珊处~","home_btn1_text":"","home_btn1_link":"","home_btn2_text":"","home_btn2_link":"","home_btn3_text":"","home_btn3_link":"","social_github":"https://github.com/GZXS1314","social_email":"3026019154@qq.com","social_twitter":"https://twitter.com","wechat_qrcode":"https://yunxiaoquan-1259323713.cos.ap-chengdu.myqcloud.com/2026/02/20260218155921256.png","hot_tags":"","enable_hot_tags":"1","enable_chatroom":"1","enable_friend_links":"1","site_bg_type":"color","site_bg_overlay_opacity":"1","site_bg_value":"#f8f7f7","site_bg_gradient_start":"#a18cd1","site_bg_gradient_end":"#fbc2eb","site_bg_value_image":"","enable_loading_anim":"1","love_letter_enabled":"1","love_boy":"Boy","love_girl":"Girl","love_boy_avatar":"https://yunxiaoquan-1259323713.cos.ap-chengdu.myqcloud.com/2025/12/20251222050918327.png","love_girl_avatar":"https://yunxiaoquan-1259323713.cos.ap-chengdu.myqcloud.com/2026/02/20260219071321988.png","love_start_date":"2025-10-01","love_bg":"https://yunxiaoquan-1259323713.cos.ap-chengdu.myqcloud.com/2026/02/20260219080512732.png","love_letter_music":"https://gz.jx1314.cc/assets/uploads/Gentleman.mp3"}'),
+('db_version', '1.1.9');
 
-UPDATE `settings` SET `value` = '1.1.2' WHERE `key_name` = 'db_version';
 --
 -- 表的结构 `tags`
 --
@@ -376,7 +389,6 @@ CREATE TABLE `tags` (
 
 --
 -- 表的结构 `users`
--- 包含 1.1.1 新增的第三方UID及积分等级字段
 --
 
 DROP TABLE IF EXISTS `users`;
@@ -420,6 +432,18 @@ CREATE TABLE `recharge_orders` (
   UNIQUE KEY `order_no` (`order_no`),
   KEY `user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分充值订单表';
+
+-- --------------------------------------------------------
+-- 表的结构 `wx_qr_tasks`
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `wx_qr_tasks` (
+  `scene_str` varchar(64) NOT NULL COMMENT '二维码场景值',
+  `status` varchar(20) DEFAULT 'pending' COMMENT '状态: pending, scanned, success',
+  `user_id` int(11) DEFAULT '0' COMMENT '登录成功的用户ID',
+  `expire_at` datetime NOT NULL COMMENT '过期时间',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`scene_str`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='微信扫码登录轮询表';
 
 COMMIT;
 

@@ -54,7 +54,114 @@ function checkRateLimit($action_name, $limit_seconds = 3) {
 }
 
 switch ($action) {
+    
+    // --- 账号登录 ---
+    case 'login':
+        checkRateLimit('login', 3);
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $captcha = trim($_POST['captcha'] ?? '');
 
+        if (empty($_SESSION['captcha_code']) || strtolower($captcha) !== strtolower($_SESSION['captcha_code'])) {
+            echo json_encode(['success' => false, 'msg' => '图形验证码错误']);
+            break;
+        }
+
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE (username = ? OR email = ?) LIMIT 1");
+        $stmt->execute([$username, $username]);
+        $user = $stmt->fetch();
+
+        if ($user && password_verify($password, $user['password'])) {
+            if ($user['is_banned']) {
+                echo json_encode(['success' => false, 'msg' => '账号已被封禁']);
+                break;
+            }
+            // 记录 Session
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['nickname'] = $user['nickname'];
+            $_SESSION['avatar'] = $user['avatar'];
+            unset($_SESSION['captcha_code']); // 销毁验证码
+            
+            echo json_encode(['success' => true, 'msg' => '登录成功']);
+        } else {
+            echo json_encode(['success' => false, 'msg' => '账号或密码错误']);
+        }
+        break;
+
+    // --- 账号注册 ---
+    case 'register':
+        checkRateLimit('register', 5);
+        $username = trim($_POST['username'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $email_code = trim($_POST['email_code'] ?? '');
+        
+        // 校验邮箱验证码
+        if (empty($_SESSION['email_verify_code']) || $email_code != $_SESSION['email_verify_code'] || $email !== $_SESSION['email_verify_addr']) {
+            echo json_encode(['success' => false, 'msg' => '邮箱验证码错误或已失效']);
+            break;
+        }
+
+        // 查重
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
+        $stmt->execute([$username, $email]);
+        if ($stmt->fetch()) {
+            echo json_encode(['success' => false, 'msg' => '用户名或邮箱已被注册']);
+            break;
+        }
+
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $nickname = '用户_' . rand(1000, 9999);
+        $avatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' . urlencode($username);
+
+        $stmt = $pdo->prepare("INSERT INTO users (username, email, nickname, password, avatar, points, level) VALUES (?, ?, ?, ?, ?, 0, 1)");
+        if ($stmt->execute([$username, $email, $nickname, $hashed_password, $avatar])) {
+            // 注册成功直接登录
+            $newUserId = $pdo->lastInsertId();
+            $_SESSION['user_id'] = $newUserId;
+            $_SESSION['username'] = $username;
+            $_SESSION['nickname'] = $nickname;
+            $_SESSION['avatar'] = $avatar;
+            unset($_SESSION['email_verify_code'], $_SESSION['email_verify_addr']);
+            
+            echo json_encode(['success' => true, 'msg' => '注册成功']);
+        } else {
+            echo json_encode(['success' => false, 'msg' => '注册失败，请稍后重试']);
+        }
+        break;
+
+    // --- 重置密码 ---
+    case 'reset_password':
+        checkRateLimit('reset_pwd', 5);
+        $email = trim($_POST['email'] ?? '');
+        $new_password = $_POST['new_password'] ?? '';
+        $email_code = trim($_POST['email_code'] ?? '');
+
+        if (empty($_SESSION['reset_email_code']) || $email_code != $_SESSION['reset_email_code'] || $email !== $_SESSION['reset_email_addr']) {
+            echo json_encode(['success' => false, 'msg' => '邮箱验证码错误或已失效']);
+            break;
+        }
+
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+        if (!$user) {
+            echo json_encode(['success' => false, 'msg' => '该邮箱未绑定任何账号']);
+            break;
+        }
+
+        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+        $pdo->prepare("UPDATE users SET password = ? WHERE email = ?")->execute([$hashed_password, $email]);
+        
+        // 重置成功后直接登录
+        $_SESSION['user_id'] = $user['id'];
+        unset($_SESSION['reset_email_code'], $_SESSION['reset_email_addr']);
+        
+        echo json_encode(['success' => true, 'msg' => '密码重置成功']);
+        break;
+    
+    
     // --- 获取文章列表 ---
     case 'get_list':
         $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;

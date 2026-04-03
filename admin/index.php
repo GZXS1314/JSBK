@@ -151,6 +151,35 @@ function getSoftVersions($pdo) {
 $server = getServerStats();
 $soft_ver = getSoftVersions($pdo);
 
+// --- 【新增】服务端直接抓取用户 IP 并获取经纬度，降维打击跨域问题 ---
+function getUserGeo() {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    // 获取真实代理后的 IP
+    if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ip = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+    }
+    // 本地测试环境过滤
+    if ($ip === '127.0.0.1' || $ip === '::1') $ip = ''; 
+
+    // 调用 ip-api.com 直接返回经纬度和城市（服务端发起，绝对无视跨域和浏览器拦截）
+    $url = "http://ip-api.com/json/{$ip}?lang=zh-CN&fields=status,city,lat,lon";
+    $ctx = stream_context_create(['http' => ['timeout' => 2]]);
+    $res = @file_get_contents($url, false, $ctx);
+    
+    if ($res) {
+        $data = json_decode($res, true);
+        if (isset($data['status']) && $data['status'] === 'success') {
+            return [
+                'lat' => $data['lat'],
+                'lon' => $data['lon'],
+                'city' => $data['city']
+            ];
+        }
+    }
+    return null;
+}
+$user_geo = getUserGeo();
+
 // 业务数据
 $count_article = $pdo->query("SELECT COUNT(*) FROM articles")->fetchColumn();
 $count_comment = $pdo->query("SELECT COUNT(*) FROM comments")->fetchColumn();
@@ -199,7 +228,7 @@ require 'header.php';
 
     <div class="b-card area-server">
         <div class="card-head"><i class="fas fa-server"></i> 资源监控</div>
-        <div class="server-layout" style="display: flex; flex-direction: column; height: 100%;">
+        <div class="server-layout" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
             <div class="server-charts">
                 <div style="text-align:center;">
                     <div class="server-circle" id="chart-cpu"></div>
@@ -219,20 +248,17 @@ require 'header.php';
 
             <style>
                 .waifu-container {
-                    flex: 1;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    overflow: hidden;
+                    flex: 1; /* 占据图表和底部信息之外的全部剩余空间 */
+                    min-height: 0; /* 彻底阻断内容撑开容器的连锁反应 */
+                    position: relative; /* 为内部绝对定位做参照 */
                     margin: 10px 0;
-                    min-height: 320px; 
-                    position: relative;
+                    width: 100%;
                 }
                 
                 /* 对话气泡样式 */
                 .waifu-dialog {
                     position: absolute;
-                    top: 20px; 
+                    top: 5%; /* 改用百分比，避免小屏幕下被挤出边界 */
                     left: 50%;
                     transform: translateX(-50%);
                     background: rgba(255, 255, 255, 0.85);
@@ -269,6 +295,11 @@ require 'header.php';
                 }
 
                 #live2d-canvas {
+                    /* 【终极杀招】绝对定位：让画布完全脱离文档流。
+                       这样画布的高度就 100% 由父级分配的剩余空间决定，绝对不会再把底部文字挤出去了 */
+                    position: absolute;
+                    top: 0;
+                    left: 0;
                     width: 100%;
                     height: 100%;
                     object-fit: contain; 
@@ -445,15 +476,50 @@ require 'header.php';
         </div>
     </div>
 
-    <div class="b-card area-quick">
-        <div class="card-head"><i class="fas fa-rocket"></i> 快捷操作</div>
-        <div class="quick-grid">
-            <a href="articles.php?action=add" class="q-btn"><i class="fas fa-pen"></i> 写文章</a>
-            <a href="photos.php" class="q-btn"><i class="fas fa-upload"></i> 传照片</a>
-            <a href="comments.php" class="q-btn"><i class="fas fa-comments"></i> 审评论</a>
-            <a href="friends.php" class="q-btn"><i class="fas fa-link"></i> 审友链</a>
+    <div class="b-card area-quick flip-wrapper">
+    <div class="flip-inner" onclick="this.classList.toggle('is-flipped')">
+        
+        <div class="flip-face flip-front">
+            <div class="card-head" style="margin-bottom: 8px;">
+                <span style="display: flex; align-items: center; gap: 6px; color: #059669;">
+                    <i class="fab fa-weixin" style="font-size: 16px;"></i> 
+                    <span style="font-weight: 700; letter-spacing: 0.5px;">微信交流群</span>
+                </span>
+                <i class="fas fa-sync-alt flip-hint-icon" title="点击翻转"></i>
+            </div> 
+            
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px;">
+                
+                <div class="qr-frame">
+                    <img src="https://yunxiaoquan-1259323713.cos.ap-chengdu.myqcloud.com/2026/04/20260403024457477.png" alt="WeChat Group QR" style="width: 100px; height: 100px; border-radius: 8px; object-fit: contain; display: block;">
+                </div>
+                
+                <div style="font-size: 13px; font-weight: 600; color: #475569; text-align: center; line-height: 1.5;">
+                    <i class="fas fa-user-plus" style="color: #10b981; font-size: 11px; margin-right: 4px;"></i>添加作者<br>
+                    <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">加入专属交流群聊</span>
+                </div>
+            </div>
         </div>
+
+        <div class="flip-face flip-back">
+            <div class="card-head">
+                <span style="display: flex; align-items: center; gap: 6px; color: #4f46e5;">
+                    <i class="fas fa-rocket"></i> 
+                    <span style="font-weight: 700;">快捷操作</span>
+                </span>
+                <i class="fas fa-undo flip-hint-icon" title="点击返回"></i>
+            </div>
+            
+            <div class="quick-grid" style="padding-top: 10px;">
+                <a href="articles.php?action=add" class="q-btn" onclick="event.stopPropagation()"><i class="fas fa-pen"></i> 写文章</a>
+                <a href="photos.php" class="q-btn" onclick="event.stopPropagation()"><i class="fas fa-upload"></i> 传照片</a>
+                <a href="comments.php" class="q-btn" onclick="event.stopPropagation()"><i class="fas fa-comments"></i> 审评论</a>
+                <a href="friends.php" class="q-btn" onclick="event.stopPropagation()"><i class="fas fa-link"></i> 审友链</a>
+            </div>
+        </div>
+
     </div>
+</div>
 
 </div>
 
@@ -467,7 +533,9 @@ require 'header.php';
             cpu_percent: <?= $server['cpu_percent'] ?>,
             mem_percent: <?= $server['mem_percent'] ?>,
             disk_percent: <?= $server['disk_percent'] ?>
-        }
+        },
+        // 【新增】把后端获取到的精准坐标直接喂给前端
+        userGeo: <?= $user_geo ? json_encode($user_geo) : 'null' ?>
     };
 </script>
 

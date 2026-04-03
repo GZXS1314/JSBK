@@ -1,19 +1,8 @@
 <?php
 // admin/header.php
 /**
-                _ _                    ____  _                              
-               | (_) __ _ _ __   __ _  / ___|| |__  _   _  ___              
-            _  | | |/ _` | '_ \ / _` | \___ \| '_ \| | | |/ _ \             
-           | |_| | | (_| | | | | (_| |  ___) | | | | |_| | (_) |            
-            \___/|_|\__,_|_| |_|\__, | |____/|_| |_|\__,_|\___/             
-   ____  _____          _  __  |___/  _____  _  _  _          ____ ____ 
-  / ___| |__  /         | | \ \/ / / | |___ /  / | | || |        / ___/ ___|
- | |  _    / /       _  | |  \  /  | |   |_ \  | | | || |_      | |  | |   
- | |_| |  / /_   _  | |_| |  /  \  | |  ___) | | | |__   _|  _  | |__| |___ 
-  \____| /____| (_)  \___/  /_/\_\ |_| |____/  |_|    |_|   (_)  \____\____|
-                                                                            
-                                追求极致的美学                               
-**/
+ * [主题重构版] 包含外观主题管理的后台头部
+ **/
 // 获取当前页面文件名，用于菜单高亮
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
@@ -22,7 +11,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Aether Admin</title>
+    <title>JS · Admin</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="assets/css/header.css?v=<?= time() ?>" rel="stylesheet">
 </head>
@@ -66,12 +55,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <a href="chat_manage.php" class="nav-link <?= $current_page == 'chat_manage.php' ? 'active' : '' ?>">
                     <i class="fas fa-comments"></i> 聊天室
                 </a>
-                <a href="wishes.php" class="nav-link <?= $current_page == 'wishes.php' ? 'active' : '' ?>">
-                    <i class="fas fa-envelope-open-text"></i> 祝福留言
-                </a>
-                <a href="love.php" class="nav-link <?= $current_page == 'love.php' ? 'active' : '' ?>">
-                    <i class="fas fa-heart" style="color: <?= $current_page == 'love.php' ? 'inherit' : '#ec4899' ?>;"></i> 情侣空间
-                </a>
                 <a href="friends.php" class="nav-link <?= $current_page == 'friends.php' ? 'active' : '' ?>">
                     <i class="fas fa-link"></i> 友情链接
                 </a>
@@ -86,6 +69,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <i class="fas fa-coins"></i> 收支明细
                 </a>
             </div>
+
+            <div class="nav-group">
+                <div class="nav-title">Appearance</div>
+                <a href="themes.php" class="nav-link <?= $current_page == 'themes.php' ? 'active' : '' ?>" style="<?= $current_page == 'themes.php' ? 'color: #a18cd1;' : '' ?>">
+                    <i class="fas fa-palette"></i> 外观主题
+                </a>
+            </div>
+
             <div class="nav-group">
                 <div class="nav-title">System</div>
                 <a href="users.php" class="nav-link <?= $current_page == 'users.php' ? 'active' : '' ?>">
@@ -93,9 +84,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </a>
                 <a href="settings.php" class="nav-link <?= $current_page == 'settings.php' ? 'active' : '' ?>">
                     <i class="fas fa-sliders"></i> 网站设置
-                </a>
-                <a href="about_settings.php" class="nav-link <?= $current_page == 'about_settings.php' ? 'active' : '' ?>">
-                    <i class="fas fa-id-card"></i> 关于页面
                 </a>
             </div>
 
@@ -136,7 +124,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                                 <div class="noti-item-security" id="notiSecurity">
                                     <h4><i class="fas fa-shield-halved"></i> 安全规则未配置</h4>
                                     <p>检测到物理 PHP 文件仍可被外部访问，请在 Nginx 中追加以下防盗链规则：</p>
-                                    <code>if ($request_uri ~* ^/(pages|includes|install)/.*\.php) {return 403;}</code>
+                                    <code>if ($request_uri ~* ^/(themes|includes|install)/.*\.php) {return 403;}</code>
                                     <div class="noti-action-bar">
                                         <button class="noti-btn noti-btn-check" onclick="checkSecurityRules(true)">重新检测</button>
                                         <button class="noti-btn noti-btn-ignore" onclick="dismissSecurityNotice()">忽略</button>

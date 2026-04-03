@@ -12,52 +12,51 @@
 document.addEventListener('DOMContentLoaded', function() {
     
     // ------------------------------------------------------------------------
-    // 1. Weather Widget Logic (天气组件)
+    // 1. Weather Widget Logic (强迫症福音版：纯后端无感定位，告别一切红字)
     // ------------------------------------------------------------------------
     async function initWeather() {
+        const cityEl = document.getElementById('w-city');
         const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms));
-        
-        try {
-            // Step 1: 获取定位
-            const locRes = await Promise.race([fetch('https://ipapi.co/json/'), timeout(3000)]);
-            if(!locRes.ok) throw new Error("Location API unavailable");
-            const locData = await locRes.json();
-            
-            const lat = locData.latitude; 
-            const lon = locData.longitude;
-            const cityEl = document.getElementById('w-city');
-            if(cityEl) cityEl.innerText = locData.city || "本地";
 
-            // Step 2: 获取天气
-            const weatherRes = await Promise.race([
-                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m`),
-                timeout(3000)
-            ]);
-            if(!weatherRes.ok) throw new Error("Weather API unavailable");
-            const wData = await weatherRes.json();
-            
-            // Step 3: 渲染DOM
-            document.getElementById('w-temp').innerText = Math.round(wData.current_weather.temperature) + "°";
-            document.getElementById('w-wind').innerText = wData.current_weather.windspeed + " km/h";
-            document.getElementById('w-hum').innerText = wData.hourly.relativehumidity_2m[new Date().getHours()] || 50;
-            
-            const wCode = wData.current_weather.weathercode;
-            const iconEl = document.getElementById('w-icon');
-            iconEl.className = 'fas';
-            
-            // 简单的天气图标映射
-            if (wCode <= 1) iconEl.classList.add('fa-sun');
-            else if (wCode <= 3) iconEl.classList.add('fa-cloud-sun');
-            else if (wCode <= 67) iconEl.classList.add('fa-cloud-rain');
-            else iconEl.classList.add('fa-cloud');
+        // 核心渲染天气函数
+        async function fetchWeather(lat, lon, cityName) {
+            try {
+                if(cityEl) cityEl.innerText = cityName || "本地";
+                const weatherRes = await Promise.race([
+                    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m`),
+                    timeout(4000)
+                ]);
+                if(!weatherRes.ok) throw new Error("Weather API Error");
+                const wData = await weatherRes.json();
+                
+                document.getElementById('w-temp').innerText = Math.round(wData.current_weather.temperature) + "°";
+                document.getElementById('w-wind').innerText = wData.current_weather.windspeed + " km/h";
+                document.getElementById('w-hum').innerText = wData.hourly.relativehumidity_2m[new Date().getHours()] || 50;
+                
+                const wCode = wData.current_weather.weathercode;
+                const iconEl = document.getElementById('w-icon');
+                iconEl.className = 'fas';
+                if (wCode <= 1) iconEl.classList.add('fa-sun');
+                else if (wCode <= 3) iconEl.classList.add('fa-cloud-sun');
+                else if (wCode <= 67) iconEl.classList.add('fa-cloud-rain');
+                else iconEl.classList.add('fa-cloud');
+                
+            } catch (e) {
+                console.warn("天气加载失败:", e);
+                if(cityEl) cityEl.innerText = "天气加载失败";
+                document.getElementById('w-temp').innerText = "-°";
+            }
+        }
 
-        } catch (e) {
-            console.warn("Weather widget error:", e);
-            const cityEl = document.getElementById('w-city');
-            if(cityEl) cityEl.innerText = "暂无定位";
-            
-            const tempEl = document.getElementById('w-temp');
-            if(tempEl) tempEl.innerText = "-";
+        // 彻底抛弃 navigator.geolocation，直接读取后端 PHP 喂到嘴边的坐标
+        if (window.dbConfig && window.dbConfig.userGeo) {
+            const geo = window.dbConfig.userGeo;
+            console.log("📍 [完美定位] 直接使用后端坐标:", geo.city);
+            fetchWeather(geo.lat, geo.lon, geo.city);
+        } else {
+            console.warn("📍 后端未能获取到有效坐标");
+            if(cityEl) cityEl.innerText = "定位失败";
+            document.getElementById('w-temp').innerText = "-°";
         }
     }
     initWeather();

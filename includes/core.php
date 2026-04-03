@@ -1,15 +1,10 @@
 <?php
 // includes/core.php
-/**
- * 系统核心运行逻辑与函数库 (Core)
- * (从原 config.php 剥离的 Session、数据库单例、权限控制等逻辑)
- */
-
 require_once __DIR__ . '/redis_helper.php';
 
 // --- 1. 环境变量与报错控制 ---
 define('APP_ENV', 'production'); // 'development' 或 'production'
-define('APP_VERSION', '1.1.3'); 
+define('APP_VERSION', '1.1.8'); 
 
 if (APP_ENV === 'development') {
     error_reporting(E_ALL); 
@@ -147,5 +142,42 @@ if (isset($_SESSION['user_id'])) {
         echo "<script>alert('您的账号已被封禁或不存在');window.location.href='login.php';</script>";
         exit;
     }
+}
+
+// ==========================================
+// 主题专属配置读取函数 (前台模板调用)
+// ==========================================
+function getThemeOption($key, $default = '') {
+    // 静态缓存：一次页面加载无论调多少次，只查一次数据库
+    static $theme_options = null; 
+
+    if ($theme_options === null) {
+        $pdo = getDB();
+        
+        // 1. 获取当前启用的主题
+        $stmt = $pdo->query("SELECT value FROM settings WHERE key_name = 'active_theme'");
+        $active_theme = $stmt->fetchColumn() ?: 'default';
+
+        // 2. 获取该主题的 JSON 数据
+        $stmt = $pdo->prepare("SELECT value FROM settings WHERE key_name = ?");
+        $stmt->execute(["theme_options_" . $active_theme]);
+        $json_str = $stmt->fetchColumn();
+
+        $theme_options = $json_str ? json_decode($json_str, true) : [];
+        if (!is_array($theme_options)) {
+            $theme_options = [];
+        }
+    }
+
+    // 3. 如果没取到，尝试去老 settings 表里找个兜底 (确保平滑过渡)
+    if (!isset($theme_options[$key]) || $theme_options[$key] === '') {
+        global $settings; // 假设 config.php 已经把全局 settings 存入了全局变量
+        if (isset($settings[$key]) && $settings[$key] !== '') {
+            return htmlspecialchars($settings[$key]);
+        }
+        return htmlspecialchars($default);
+    }
+
+    return htmlspecialchars($theme_options[$key]);
 }
 ?>

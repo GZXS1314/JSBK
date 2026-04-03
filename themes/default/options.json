@@ -1,0 +1,95 @@
+[
+    {
+        "tab_id": "home", "tab_name": "首页设置", "tab_icon": "fas fa-home",
+        "fields": [
+            { "name": "home_slogan_main", "label": "主标题 (Slogan)", "type": "text", "default": "人生如棋<br>落子无悔" },
+            { "name": "home_slogan_sub", "label": "副标题", "type": "text", "default": "" },
+            { "name": "author_name", "label": "作者昵称", "type": "text", "default": "江硕" },
+            { "name": "author_avatar", "label": "作者头像 URL", "type": "text_upload", "default": "" },
+            { "name": "author_bio", "label": "个人简介", "type": "textarea", "default": "蓦然回首，那人却在灯火阑珊处~" },
+            { "name": "home_btn1_text", "label": "按钮 1 文字", "type": "text", "default": "" },
+            { "name": "home_btn1_link", "label": "按钮 1 链接", "type": "text", "default": "" },
+            { "name": "home_btn2_text", "label": "按钮 2 文字", "type": "text", "default": "" },
+            { "name": "home_btn2_link", "label": "按钮 2 链接", "type": "text", "default": "" },
+            { "name": "home_btn3_text", "label": "按钮 3 文字", "type": "text", "default": "" },
+            { "name": "home_btn3_link", "label": "按钮 3 链接", "type": "text", "default": "" },
+            { "name": "social_github", "label": "GitHub 链接", "type": "text", "default": "" },
+            { "name": "social_email", "label": "Email 邮箱", "type": "text", "default": "" },
+            { "name": "social_twitter", "label": "Twitter 链接", "type": "text", "default": "" },
+            { "name": "wechat_qrcode", "label": "微信二维码 URL", "type": "text_upload", "default": "" },
+            { "name": "hot_tags", "label": "热门标签 (英文逗号分隔)", "type": "text", "default": "PHP,Linux,Web开发,设计,生活", "col": 12 },
+            { "name": "enable_hot_tags", "label": "侧边栏显示热门标签", "type": "switch", "default": "1", "col": 3 },
+            { "name": "enable_chatroom", "label": "开启聊天室", "type": "switch", "default": "1", "col": 3 },
+            { "name": "chatroom_muted", "label": "聊天室全体禁言", "type": "switch", "default": "0", "col": 3 },
+            { "name": "enable_friend_links", "label": "侧边栏显示友情链接", "type": "switch", "default": "1", "col": 3 },
+            { "type": "friend_links", "label": "友情链接管理" }
+        ]
+    },
+    {
+        "tab_id": "style", "tab_name": "外观与色彩", "tab_icon": "fas fa-palette",
+        "fields": [
+            {
+                "name": "site_bg_type", "label": "背景类型", "type": "select",
+                "options": { "color": "纯色背景", "gradient": "CSS渐变", "image": "背景图片" },
+                "default": "color"
+            },
+            { "name": "site_bg_overlay_opacity", "label": "遮罩透明度 (0-1)", "type": "text", "default": "1" },
+            { "name": "site_bg_value", "label": "纯色背景颜色值", "type": "color", "default": "#f8f7f7" },
+            { "name": "site_bg_gradient_start", "label": "渐变起始颜色", "type": "color", "default": "#a18cd1" },
+            { "name": "site_bg_gradient_end", "label": "渐变结束颜色", "type": "color", "default": "#fbc2eb" },
+            { "name": "site_bg_value_image", "label": "背景图片 URL", "type": "text_upload", "default": "" },
+            { "name": "enable_loading_anim", "label": "开启页面加载 Loading 动画", "type": "switch", "default": "1", "col": 12 }
+        ]
+    },
+    {
+        "tab_id": "love", "tab_name": "情侣空间", "tab_icon": "fas fa-heart",
+        "fields": [
+            { "name": "love_boy", "label": "男生昵称", "type": "text", "default": "" },
+            { "name": "love_girl", "label": "女生昵称", "type": "text", "default": "" },
+            { "name": "love_boy_avatar", "label": "男生头像 URL", "type": "text_upload", "default": "" },
+            { "name": "love_girl_avatar", "label": "女生头像 URL", "type": "text_upload", "default": "" },
+            { "name": "love_start_date", "label": "相恋起始日期", "type": "date", "default": "" },
+            { "name": "love_bg", "label": "背景大图 URL", "type": "text_upload", "default": "" },
+            { "name": "love_letter_enabled", "label": "开启时光情书", "type": "switch", "default": "1" },
+            { "name": "love_letter_music", "label": "情书背景音乐 URL", "type": "text_upload", "default": "", "col": 12 },
+            { "name": "love_letter_content", "label": "情书内容 (支持 HTML)", "type": "textarea", "default": "" },
+            { "type": "love_events", "label": "甜蜜动态管理" },
+            { "type": "love_wishes", "label": "祝福留言管理" }
+        ]
+    },
+    {
+        "tab_id": "about", "tab_name": "关于页面", "tab_icon": "fas fa-address-card",
+        "fields": [
+            { "type": "about_avatar_tags", "label": "八个环绕标签" },
+            { "name": "about_photo_bg", "label": "纯图卡片背景", "type": "text_upload", "default": "" },
+            { "name": "about_motto_tag", "label": "追求标签", "type": "text", "default": "" },
+            { "name": "about_motto_title", "label": "核心标题 (支持 <br> 换行)", "type": "text", "default": "" },
+            { "name": "about_mbti_name", "label": "MBTI 称号", "type": "text", "default": "" },
+            { "name": "about_mbti_type", "label": "MBTI 英文", "type": "text", "default": "" },
+            { "name": "about_mbti_icon", "label": "MBTI 图标", "type": "icon_picker", "default": "fa-leaf" },
+            { "name": "about_belief_title", "label": "信仰文案 (支持 <br>)", "type": "textarea", "default": "" },
+            { "name": "about_specialty_title", "label": "特长文案 (支持 <br>)", "type": "textarea", "default": "" },
+            { "type": "about_career_events", "label": "生涯时间线节点" },
+            { "type": "about_career_axis", "label": "底部时间轴坐标" },
+            { "name": "about_location_city", "label": "当前城市", "type": "text", "default": "" },
+            { "name": "about_loc_birth", "label": "出生标签", "type": "text", "default": "" },
+            { "name": "about_loc_major", "label": "专业标签", "type": "text", "default": "" },
+            { "name": "about_loc_job", "label": "职业标签", "type": "text", "default": "" },
+            { "name": "about_journey_content", "label": "建站历程描述 (支持 HTML)", "type": "textarea", "default": "" },
+            { "name": "about_game_title", "label": "游戏热爱 - 标题", "type": "text", "default": "" },
+            { "name": "about_game_bg", "label": "游戏热爱 - 背景图片", "type": "text_upload", "default": "" },
+            { "name": "about_tech_title", "label": "数码科技 - 标题", "type": "text", "default": "" },
+            { "name": "about_tech_bg", "label": "数码科技 - 背景图片", "type": "text_upload", "default": "" },
+            { "name": "about_music_title", "label": "音乐偏好 - 概括标题", "type": "text", "default": "" },
+            { "name": "about_music_bg", "label": "音乐偏好 - 沉浸背景图", "type": "text_upload", "default": "" },
+            { "type": "about_anime_covers", "label": "近期追番/影视海报" }
+        ]
+    },
+    {
+        "tab_id": "code", "tab_name": "自定义代码", "tab_icon": "fas fa-code",
+        "fields": [
+            { "name": "custom_css", "label": "自定义 CSS", "type": "textarea", "default": "" },
+            { "name": "custom_js", "label": "自定义 JavaScript", "type": "textarea", "default": "" }
+        ]
+    }
+]

@@ -255,3 +255,84 @@
 }
 
 .fa-spin-fast { animation: fa-spin 0.8s infinite linear; }
+
+/* =========================================
+ * 丝滑翻转卡片 (Premium UI)
+ * ========================================= */
+.area-quick.flip-wrapper {
+    perspective: 1200px; /* 增加透视距离，让翻转更自然不夸张 */
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    /* 核心：极其丝滑的物理回弹动画曲线 */
+    transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-style: preserve-3d;
+    cursor: pointer;
+}
+
+.flip-inner.is-flipped {
+    transform: rotateY(180deg);
+}
+
+/* 正反面共用高级毛玻璃底板 */
+.flip-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 18px;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(16px);
+    /* 高级多层柔和阴影 */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.flip-back {
+    transform: rotateY(180deg);
+}
+
+/* 二维码专属高质感相框 */
+.qr-frame {
+    padding: 10px;
+    background: #ffffff;
+    border-radius: 16px;
+    /* 内外双层阴影营造立体相框感 */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+    transition: transform 0.3s ease;
+}
+
+/* 鼠标悬停时的轻微呼吸反馈 */
+.flip-inner:hover .qr-frame {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+}
+
+/* 右上角优雅的翻转提示符 */
+.flip-hint-icon {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    opacity: 0.4;
+    transition: all 0.3s ease;
+    background: rgba(0,0,0,0.03);
+    padding: 6px;
+    border-radius: 50%;
+}
+.flip-inner:hover .flip-hint-icon {
+    opacity: 1;
+    background: rgba(0,0,0,0.06);
+    transform: rotate(30deg);
+}

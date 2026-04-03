@@ -47,10 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
         }
 
-        // 目录权限
+        // 目录权限 (新增了主题目录检查)
         $dirs = [
             '/includes/' => '配置文件目录',
-            '/assets/uploads/' => '上传目录'
+            '/assets/uploads/' => '上传目录',
+            '/themes/' => '主题目录'
         ];
         foreach ($dirs as $path => $desc) {
             $fullPath = ROOT_PATH . $path;
